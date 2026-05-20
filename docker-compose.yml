@@ -1,0 +1,31 @@
+services:
+  db-transacional:
+    image: postgres:16
+    container_name: sneakers-oltp
+    restart: always
+    environment:
+      POSTGRES_USER: sneakers_user
+      POSTGRES_PASSWORD: sneakers2026
+      POSTGRES_DB: sneakers_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - dados-transacional:/var/lib/postgresql/data
+
+  db-bi:
+    image: postgres:16
+    container_name: sneakers-bi
+    restart: always
+    environment:
+      POSTGRES_USER: bi_user
+      POSTGRES_PASSWORD: bi2026
+      POSTGRES_DB: sneakers_bi
+    ports:
+      - "5433:5432"
+    volumes:
+      - dados-bi:/var/lib/postgresql/data
+
+volumes:
+  dados-transacional:
+  dados-bi:
+ 

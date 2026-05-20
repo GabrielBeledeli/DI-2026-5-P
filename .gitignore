@@ -1,0 +1,29 @@
+# Variáveis de ambiente
+.env
+.env.local
+.env.production
+
+# Node
+node_modules/
+dist/
+build/
+
+# Next.js
+.next/
+
+# Python
+ml/venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Prisma
+prisma/migrations/dev.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
