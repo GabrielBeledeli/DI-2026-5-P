@@ -9,9 +9,20 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "axios": "^1.16.1",
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
     "next": "16.2.6",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.76.0",
+    "sweetalert2": "^11.26.24",
+    "sweetalert2-react-content": "^5.1.2",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
