@@ -1,5 +1,6 @@
 import api from './api';
 import { Categoria } from '@/types';
+import { extractArray } from './responseUtils';
 
 const mockCategorias: Categoria[] = [
   { id: 1, nome: 'Casual', totalProdutos: 24 },
@@ -12,9 +13,9 @@ const mockCategorias: Categoria[] = [
 export const categoriaService = {
   listar: async () => {
     try {
-      const response = await api.get<Categoria[]>('/categorias');
-      return response.data;
-    } catch (error) {
+      const response = await api.get<unknown>('/categorias');
+      return extractArray<Categoria>(response.data, ['categorias']);
+    } catch {
       console.warn('Backend offline, usando dados mockados');
       return mockCategorias;
     }
@@ -23,7 +24,7 @@ export const categoriaService = {
     try {
       const response = await api.get<Categoria>(`/categorias/${id}`);
       return response.data;
-    } catch (error) {
+    } catch {
       return mockCategorias.find(c => c.id === id) || mockCategorias[0];
     }
   },
@@ -31,7 +32,7 @@ export const categoriaService = {
     try {
       const response = await api.post<Categoria>('/categorias', dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id: Math.floor(Math.random() * 1000), ...dados };
     }
   },
@@ -39,14 +40,14 @@ export const categoriaService = {
     try {
       const response = await api.put<Categoria>(`/categorias/${id}`, dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id, ...dados } as Categoria;
     }
   },
   deletar: async (id: number) => {
     try {
       await api.delete(`/categorias/${id}`);
-    } catch (error) {
+    } catch {
       console.warn('Mock: Categoria deletada');
     }
   },

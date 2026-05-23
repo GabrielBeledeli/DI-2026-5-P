@@ -1,5 +1,15 @@
 import api from './api';
 import { Venda } from '@/types';
+import { extractArray } from './responseUtils';
+
+type CriarVendaData = {
+  clienteId: number;
+  itens: Array<{
+    produtoId: number;
+    quantidade: number;
+    precoUnitario: number;
+  }>;
+};
 
 const mockVendas: Venda[] = [
   { id: 1, clienteId: 1, total: 2400, status: 'ATIVO', data: new Date().toISOString(), cliente: { id: 1, nome: 'João Silva', email: 'joao@nike.com', cidade: 'SP', estado: 'SP', pais: 'Brasil' } },
@@ -10,9 +20,9 @@ const mockVendas: Venda[] = [
 export const vendaService = {
   listar: async () => {
     try {
-      const response = await api.get<Venda[]>('/vendas');
-      return response.data;
-    } catch (error) {
+      const response = await api.get<unknown>('/vendas');
+      return extractArray<Venda>(response.data, ['vendas']);
+    } catch {
       console.warn('Backend offline, usando dados mockados');
       return mockVendas;
     }
@@ -21,15 +31,15 @@ export const vendaService = {
     try {
       const response = await api.get<Venda>(`/vendas/${id}`);
       return response.data;
-    } catch (error) {
+    } catch {
       return mockVendas.find(v => v.id === id) || mockVendas[0];
     }
   },
-  criar: async (dados: any) => {
+  criar: async (dados: CriarVendaData) => {
     try {
       const response = await api.post<Venda>('/vendas', dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id: Math.floor(Math.random() * 1000), ...dados, status: 'ATIVO', data: new Date().toISOString() };
     }
   },
@@ -37,7 +47,7 @@ export const vendaService = {
     try {
       const response = await api.patch<Venda>(`/vendas/${id}/cancelar`);
       return response.data;
-    } catch (error) {
+    } catch {
       console.warn('Mock: Venda cancelada');
       return { id, status: 'CANCELADO' } as Venda;
     }
@@ -45,7 +55,7 @@ export const vendaService = {
   deletar: async (id: number) => {
     try {
       await api.delete(`/vendas/${id}`);
-    } catch (error) {
+    } catch {
       console.warn('Mock: Venda deletada');
     }
   },

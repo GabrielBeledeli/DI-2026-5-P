@@ -1,5 +1,6 @@
 import api from './api';
 import { Cliente } from '@/types';
+import { extractArray } from './responseUtils';
 
 const mockClientes: Cliente[] = [
   { id: 1, nome: 'João Silva', email: 'joao@nike.com', cidade: 'São Paulo', estado: 'SP', pais: 'Brasil' },
@@ -12,9 +13,9 @@ const mockClientes: Cliente[] = [
 export const clienteService = {
   listar: async () => {
     try {
-      const response = await api.get<Cliente[]>('/clientes');
-      return response.data;
-    } catch (error) {
+      const response = await api.get<unknown>('/clientes');
+      return extractArray<Cliente>(response.data, ['clientes']);
+    } catch {
       console.warn('Backend offline, usando dados mockados');
       return mockClientes;
     }
@@ -23,7 +24,7 @@ export const clienteService = {
     try {
       const response = await api.get<Cliente>(`/clientes/${id}`);
       return response.data;
-    } catch (error) {
+    } catch {
       return mockClientes.find(c => c.id === id) || mockClientes[0];
     }
   },
@@ -31,7 +32,7 @@ export const clienteService = {
     try {
       const response = await api.post<Cliente>('/clientes', dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id: Math.floor(Math.random() * 1000), ...dados };
     }
   },
@@ -39,14 +40,14 @@ export const clienteService = {
     try {
       const response = await api.put<Cliente>(`/clientes/${id}`, dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id, ...dados } as Cliente;
     }
   },
   deletar: async (id: number) => {
     try {
       await api.delete(`/clientes/${id}`);
-    } catch (error) {
+    } catch {
       console.warn('Mock: Cliente deletado');
     }
   },

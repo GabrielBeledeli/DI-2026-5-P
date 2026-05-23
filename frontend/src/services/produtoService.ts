@@ -1,5 +1,6 @@
 import api from './api';
 import { Produto } from '@/types';
+import { extractArray } from './responseUtils';
 
 const mockProdutos: Produto[] = [
   { id: 1, nome: 'Air Jordan 1 Retro High', preco: 1200, estoque: 10, categoriaId: 1, categoria: { id: 1, nome: 'Casual' } },
@@ -12,9 +13,9 @@ const mockProdutos: Produto[] = [
 export const produtoService = {
   listar: async () => {
     try {
-      const response = await api.get<Produto[]>('/produtos');
-      return response.data;
-    } catch (error) {
+      const response = await api.get<unknown>('/produtos');
+      return extractArray<Produto>(response.data, ['produtos']);
+    } catch {
       console.warn('Backend offline, usando dados mockados');
       return mockProdutos;
     }
@@ -23,7 +24,7 @@ export const produtoService = {
     try {
       const response = await api.get<Produto>(`/produtos/${id}`);
       return response.data;
-    } catch (error) {
+    } catch {
       return mockProdutos.find(p => p.id === id) || mockProdutos[0];
     }
   },
@@ -31,7 +32,7 @@ export const produtoService = {
     try {
       const response = await api.post<Produto>('/produtos', dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id: Math.floor(Math.random() * 1000), ...dados };
     }
   },
@@ -39,14 +40,14 @@ export const produtoService = {
     try {
       const response = await api.put<Produto>(`/produtos/${id}`, dados);
       return response.data;
-    } catch (error) {
+    } catch {
       return { id, ...dados } as Produto;
     }
   },
   deletar: async (id: number) => {
     try {
       await api.delete(`/produtos/${id}`);
-    } catch (error) {
+    } catch {
       console.warn('Mock: Produto deletado');
     }
   },
