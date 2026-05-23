@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { clienteService } from '@/services/clienteService';
-import ClienteForm from '@/components/forms/ClienteForm';
+import ClienteForm, { ClienteFormData } from '@/components/forms/ClienteForm';
 import { Cliente } from '@/types';
 
 const MySwal = withReactContent(Swal);
@@ -22,7 +22,7 @@ export default function EditarClientePage({ params }: { params: Promise<{ id: st
       try {
         const data = await clienteService.buscarPorId(Number(id));
         setCliente(data);
-      } catch (error) {
+      } catch {
         MySwal.fire('Erro', 'Não foi possível carregar os dados do cliente.', 'error');
         router.push('/clientes');
       } finally {
@@ -33,7 +33,7 @@ export default function EditarClientePage({ params }: { params: Promise<{ id: st
     fetchCliente();
   }, [id, router]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ClienteFormData) => {
     try {
       setSaving(true);
       await clienteService.atualizar(Number(id), data);
@@ -42,10 +42,10 @@ export default function EditarClientePage({ params }: { params: Promise<{ id: st
         text: 'Cliente atualizado com sucesso.',
         icon: 'success',
         background: '#1a1a1a',
-        color: '#fff'
+        color: '#fff',
       });
       router.push('/clientes');
-    } catch (error) {
+    } catch {
       MySwal.fire('Erro', 'Não foi possível atualizar o cliente.', 'error');
     } finally {
       setSaving(false);

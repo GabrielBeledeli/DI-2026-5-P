@@ -8,15 +8,22 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { Cliente } from '@/types';
 
+const capitalizeWords = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/(^|\s)(\S)/g, (match) => match.toUpperCase());
+
 const clienteSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().email('E-mail inválido').min(1, 'E-mail é obrigatório'),
-  cidade: z.string().optional(),
-  estado: z.string().optional(),
-  pais: z.string().optional(),
+  nome: z.string().trim().min(1, 'Nome é obrigatório').transform(capitalizeWords),
+  email: z.string().trim().min(1, 'E-mail é obrigatório').email('E-mail inválido'),
+  cidade: z.string().trim().min(1, 'Cidade é obrigatória').transform(capitalizeWords),
+  estado: z.string().trim().min(1, 'Estado é obrigatório').transform((estado) => estado.toUpperCase()),
+  pais: z.string().trim().min(1, 'País é obrigatório').transform(capitalizeWords),
 });
 
-type ClienteFormData = z.infer<typeof clienteSchema>;
+export type ClienteFormData = z.infer<typeof clienteSchema>;
 
 interface ClienteFormProps {
   initialData?: Cliente;
@@ -31,13 +38,21 @@ export default function ClienteForm({ initialData, onSubmit, isLoading }: Client
     formState: { errors },
   } = useForm<ClienteFormData>({
     resolver: zodResolver(clienteSchema),
-    defaultValues: initialData || {
-      nome: '',
-      email: '',
-      cidade: '',
-      estado: '',
-      pais: '',
-    },
+    defaultValues: initialData
+      ? {
+          nome: initialData.nome,
+          email: initialData.email,
+          cidade: initialData.cidade,
+          estado: initialData.estado,
+          pais: initialData.pais,
+        }
+      : {
+          nome: '',
+          email: '',
+          cidade: '',
+          estado: '',
+          pais: '',
+        },
   });
 
   return (
@@ -47,10 +62,14 @@ export default function ClienteForm({ initialData, onSubmit, isLoading }: Client
           label="Nome Completo"
           placeholder="Ex: João Silva"
           error={errors.nome?.message}
-          {...register('nome')}
+          {...register('nome', {
+            setValueAs: (value) => (typeof value === 'string' ? capitalizeWords(value) : value),
+          })}
         />
         <Input
           label="E-mail"
+          type="email"
+          autoComplete="email"
           placeholder="Ex: joao@email.com"
           error={errors.email?.message}
           {...register('email')}
@@ -59,19 +78,25 @@ export default function ClienteForm({ initialData, onSubmit, isLoading }: Client
           label="Cidade"
           placeholder="Ex: São Paulo"
           error={errors.cidade?.message}
-          {...register('cidade')}
+          {...register('cidade', {
+            setValueAs: (value) => (typeof value === 'string' ? capitalizeWords(value) : value),
+          })}
         />
         <Input
           label="Estado"
           placeholder="Ex: SP"
           error={errors.estado?.message}
-          {...register('estado')}
+          {...register('estado', {
+            setValueAs: (value) => (typeof value === 'string' ? value.toUpperCase() : value),
+          })}
         />
         <Input
           label="País"
           placeholder="Ex: Brasil"
           error={errors.pais?.message}
-          {...register('pais')}
+          {...register('pais', {
+            setValueAs: (value) => (typeof value === 'string' ? capitalizeWords(value) : value),
+          })}
           containerClassName="md:col-span-2"
         />
       </div>

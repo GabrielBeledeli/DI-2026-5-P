@@ -25,7 +25,7 @@ export const clienteService = {
       const response = await api.get<Cliente>(`/clientes/${id}`);
       return response.data;
     } catch {
-      return mockClientes.find(c => c.id === id) || mockClientes[0];
+      return mockClientes.find((cliente) => cliente.id === id) || mockClientes[0];
     }
   },
   criar: async (dados: Omit<Cliente, 'id'>) => {
