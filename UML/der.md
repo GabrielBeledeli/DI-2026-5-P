@@ -25,32 +25,37 @@ erDiagram
 
     PRODUTO {
         int       id_produto   PK
+        int       id_categoria FK
+        varchar   marca
         varchar   nome
+        varchar   cor
+        varchar   genero
+        varchar   tamanho
         decimal   preco
         int       estoque
-        int       id_categoria FK
         timestamp created_at
     }
 
     PEDIDO {
-        int       id_pedido   PK
-        int       id_usuario  FK
-        int       id_cliente  FK
+        int       id_pedido    PK
+        int       id_usuario   FK
+        int       id_cliente   FK
         timestamp data_pedido
         decimal   valor_total
         varchar   status
     }
 
     ITEM_PEDIDO {
-        int     id_item    PK
-        int     id_pedido  FK
-        int     id_produto FK
+        int     id_item        PK
+        int     id_pedido      FK
+        int     id_produto     FK
         int     quantidade
+        decimal preco_unitario
         decimal subtotal
     }
 
-    USUARIO   ||--o{ PEDIDO      : "1 : N"
-    CLIENTE   ||--o{ PEDIDO      : "1 : N"
-    PEDIDO    ||--|{ ITEM_PEDIDO : "1 : N"
-    PRODUTO   ||--o{ ITEM_PEDIDO : "1 : N"
-    CATEGORIA ||--o{ PRODUTO     : "1 : N"
+    USUARIO   ||--o{ PEDIDO      : ""
+    CLIENTE   ||--o{ PEDIDO      : ""
+    PEDIDO    ||--|{ ITEM_PEDIDO  : ""
+    PRODUTO   ||--o{ ITEM_PEDIDO  : ""
+    CATEGORIA ||--o{ PRODUTO      : ""
