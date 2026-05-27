@@ -73,7 +73,10 @@ export default function DashboardPage() {
   const totalClientes = clientes.length;
   const totalProdutos = produtos.length;
   const estoqueBaixo = produtos.filter(p => p.estoque < 5).length;
-  const faturamentoTotal = vendas.reduce((acc, v) => acc + (v.status === 'ATIVO' ? v.total : 0), 0);
+  const faturamentoTotal = vendas.reduce((acc, v) => {
+    const total = Number(v.total);
+    return acc + (v.status === 'ATIVO' && Number.isFinite(total) ? total : 0);
+  }, 0);
 
   // Dados fictícios para os gráficos baseados nos dados reais (ou mockados se vazio)
   const barData = {

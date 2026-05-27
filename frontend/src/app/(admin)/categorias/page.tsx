@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { categoriaService } from '@/services/categoriaService';
 import { Categoria } from '@/types';
 import Button from '@/components/ui/Button';
@@ -11,8 +9,7 @@ import Card from '@/components/ui/Card';
 import Table, { TableRow, TableCell } from '@/components/ui/Table';
 import Modal from '@/components/ui/Modal';
 import CategoriaForm from '@/components/forms/CategoriaForm';
-
-const MySwal = withReactContent(Swal);
+import { AppSwal as MySwal, showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function CategoriasPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -27,7 +24,7 @@ export default function CategoriasPage() {
       const data = await categoriaService.listar();
       setCategorias(data);
     } catch (error) {
-      MySwal.fire('Erro', 'Não foi possível carregar as categorias.', 'error');
+      showErrorAlert(error, 'Não foi possível carregar as categorias.');
     } finally {
       setLoading(false);
     }
@@ -53,10 +50,10 @@ export default function CategoriasPage() {
     if (result.isConfirmed) {
       try {
         await categoriaService.deletar(id);
-        MySwal.fire('Sucesso', 'Categoria excluída com sucesso.', 'success');
+        showSuccessAlert('Sucesso', 'Categoria excluída com sucesso.');
         fetchCategorias();
       } catch (error) {
-        MySwal.fire('Erro', 'Não foi possível excluir a categoria.', 'error');
+        showErrorAlert(error, 'Não foi possível excluir a categoria.');
       }
     }
   };
@@ -76,15 +73,15 @@ export default function CategoriasPage() {
       setSaving(true);
       if (editingCategoria) {
         await categoriaService.atualizar(editingCategoria.id, data);
-        MySwal.fire('Sucesso', 'Categoria atualizada.', 'success');
+        showSuccessAlert('Sucesso', 'Categoria atualizada.');
       } else {
         await categoriaService.criar(data);
-        MySwal.fire('Sucesso', 'Categoria criada.', 'success');
+        showSuccessAlert('Sucesso', 'Categoria criada.');
       }
       fetchCategorias();
       handleCloseModal();
     } catch (error) {
-      MySwal.fire('Erro', 'Não foi possível salvar a categoria.', 'error');
+      showErrorAlert(error, 'Não foi possível salvar a categoria.');
     } finally {
       setSaving(false);
     }

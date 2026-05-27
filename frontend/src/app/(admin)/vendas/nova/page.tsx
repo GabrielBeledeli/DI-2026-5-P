@@ -2,15 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { vendaService } from '@/services/vendaService';
 import { clienteService } from '@/services/clienteService';
 import { produtoService } from '@/services/produtoService';
 import VendaForm from '@/components/forms/VendaForm';
 import { Cliente, Produto } from '@/types';
-
-const MySwal = withReactContent(Swal);
+import { showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function NovaVendaPage() {
   const router = useRouter();
@@ -27,9 +24,9 @@ export default function NovaVendaPage() {
           produtoService.listar()
         ]);
         setClientes(clientesData);
-        setProdutos(produtosData);
+        setProdutos(produtosData.filter((produto) => produto.estoque > 0));
       } catch (error) {
-        MySwal.fire('Erro', 'Não foi possível carregar os dados necessários.', 'error');
+        showErrorAlert(error, 'Não foi possível carregar os dados necessários.');
       } finally {
         setInitialLoading(false);
       }
@@ -41,16 +38,10 @@ export default function NovaVendaPage() {
     try {
       setLoading(true);
       await vendaService.criar(data);
-      await MySwal.fire({
-        title: 'Venda Realizada!',
-        text: 'O pedido foi processado com sucesso.',
-        icon: 'success',
-        background: '#1a1a1a',
-        color: '#fff'
-      });
+      await showSuccessAlert('Venda Realizada!', 'O pedido foi processado com sucesso.');
       router.push('/vendas');
     } catch (error) {
-      MySwal.fire('Erro', 'Não foi possível finalizar a venda.', 'error');
+      showErrorAlert(error, 'Não foi possível finalizar a venda.');
     } finally {
       setLoading(false);
     }

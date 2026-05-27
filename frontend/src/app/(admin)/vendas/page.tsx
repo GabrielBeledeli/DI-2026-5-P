@@ -3,16 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Eye, Trash2, Search, Filter } from 'lucide-react';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { vendaService } from '@/services/vendaService';
 import { Venda } from '@/types';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Table, { TableRow, TableCell } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
-
-const MySwal = withReactContent(Swal);
+import { AppSwal as MySwal, showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function VendasPage() {
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -24,7 +21,7 @@ export default function VendasPage() {
       const data = await vendaService.listar();
       setVendas(data);
     } catch (error) {
-      MySwal.fire('Erro', 'Não foi possível carregar as vendas.', 'error');
+      showErrorAlert(error, 'Não foi possível carregar as vendas.');
     } finally {
       setLoading(false);
     }
@@ -49,10 +46,10 @@ export default function VendasPage() {
     if (result.isConfirmed) {
       try {
         await vendaService.cancelar(id);
-        MySwal.fire('Sucesso', 'Venda cancelada com sucesso.', 'success');
+        showSuccessAlert('Sucesso', 'Venda cancelada com sucesso.');
         fetchVendas();
       } catch (error) {
-        MySwal.fire('Erro', 'Não foi possível cancelar a venda.', 'error');
+        showErrorAlert(error, 'Não foi possível cancelar a venda.');
       }
     }
   };

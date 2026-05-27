@@ -3,16 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2, Search, AlertCircle } from 'lucide-react';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { produtoService } from '@/services/produtoService';
 import { Produto } from '@/types';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Table, { TableRow, TableCell } from '@/components/ui/Table';
 import Badge from '@/components/ui/Badge';
-
-const MySwal = withReactContent(Swal);
+import { AppSwal as MySwal, showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -28,7 +25,7 @@ export default function ProdutosPage() {
       setFilteredProdutos(data);
     } catch (error) {
       console.error(error);
-      MySwal.fire('Erro', 'Não foi possível carregar os produtos.', 'error');
+      showErrorAlert(error, 'Não foi possível carregar os produtos.');
     } finally {
       setLoading(false);
     }
@@ -61,10 +58,10 @@ export default function ProdutosPage() {
     if (result.isConfirmed) {
       try {
         await produtoService.deletar(id);
-        MySwal.fire('Sucesso', 'Produto excluído com sucesso.', 'success');
+        showSuccessAlert('Sucesso', 'Produto excluído com sucesso.');
         fetchProdutos();
       } catch (error) {
-        MySwal.fire('Erro', 'Não foi possível excluir o produto.', 'error');
+        showErrorAlert(error, 'Não foi possível excluir o produto.');
       }
     }
   };

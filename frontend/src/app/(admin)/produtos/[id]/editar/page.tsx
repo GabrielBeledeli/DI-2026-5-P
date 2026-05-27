@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { produtoService } from '@/services/produtoService';
 import { categoriaService } from '@/services/categoriaService';
 import ProdutoForm from '@/components/forms/ProdutoForm';
 import { Produto, Categoria } from '@/types';
-
-const MySwal = withReactContent(Swal);
+import { showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function EditarProdutoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -29,7 +26,7 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
         setProduto(produtoData);
         setCategorias(categoriasData);
       } catch (error) {
-        MySwal.fire('Erro', 'Não foi possível carregar os dados.', 'error');
+        showErrorAlert(error, 'Não foi possível carregar os dados.');
         router.push('/produtos');
       } finally {
         setLoading(false);
@@ -43,16 +40,10 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
     try {
       setSaving(true);
       await produtoService.atualizar(Number(id), data);
-      await MySwal.fire({
-        title: 'Sucesso!',
-        text: 'Produto atualizado com sucesso.',
-        icon: 'success',
-        background: '#1a1a1a',
-        color: '#fff'
-      });
+      await showSuccessAlert('Sucesso!', 'Produto atualizado com sucesso.');
       router.push('/produtos');
     } catch (error) {
-      MySwal.fire('Erro', 'Não foi possível atualizar o produto.', 'error');
+      showErrorAlert(error, 'Não foi possível atualizar o produto.');
     } finally {
       setSaving(false);
     }

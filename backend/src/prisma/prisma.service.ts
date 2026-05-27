@@ -1,7 +1,11 @@
-import 'dotenv/config';
+import { join } from 'node:path';
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { config } from 'dotenv';
+
+config();
+config({ path: join(process.cwd(), '..', '.env') });
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
