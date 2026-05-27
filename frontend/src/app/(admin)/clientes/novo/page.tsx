@@ -2,31 +2,22 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { clienteService } from '@/services/clienteService';
 import ClienteForm, { ClienteFormData } from '@/components/forms/ClienteForm';
-
-const MySwal = withReactContent(Swal);
+import { showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function NovoClientePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (data: ClienteFormData) => {
-    try {
-      setLoading(true);
-      await clienteService.criar(data);
-      await MySwal.fire({
-        title: 'Sucesso!',
-        text: 'Cliente cadastrado com sucesso.',
-        icon: 'success',
-        background: '#1a1a1a',
-        color: '#fff',
-      });
+      try {
+        setLoading(true);
+        await clienteService.criar(data);
+      await showSuccessAlert('Sucesso!', 'Cliente cadastrado com sucesso.');
       router.push('/clientes');
-    } catch {
-      MySwal.fire('Erro', 'Não foi possível cadastrar o cliente.', 'error');
+    } catch (error) {
+      showErrorAlert(error, 'Não foi possível cadastrar o cliente.');
     } finally {
       setLoading(false);
     }

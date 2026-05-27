@@ -13,6 +13,57 @@ model Cliente {
   cidade String
   estado String
   pais   String
+  vendas Venda[]
 
   @@map("clientes")
+}
+
+model Categoria {
+  id       Int       @id @default(autoincrement())
+  nome     String
+  produtos Produto[]
+
+  @@map("categorias")
+}
+
+model Produto {
+  id          Int         @id @default(autoincrement())
+  nome        String
+  preco       Float
+  estoque     Int
+  categoriaId Int?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  itens       VendaItem[]
+
+  @@map("produtos")
+}
+
+model Venda {
+  id        Int         @id @default(autoincrement())
+  clienteId Int
+  cliente   Cliente     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  total     Float
+  status    VendaStatus @default(ATIVO)
+  data      DateTime    @default(now())
+  itens     VendaItem[]
+
+  @@map("vendas")
+}
+
+model VendaItem {
+  id            Int     @id @default(autoincrement())
+  vendaId       Int
+  venda         Venda   @relation(fields: [vendaId], references: [id], onDelete: Cascade)
+  produtoId     Int
+  produto       Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  quantidade    Int
+  precoUnitario Float
+  subtotal      Float
+
+  @@map("venda_itens")
+}
+
+enum VendaStatus {
+  ATIVO
+  CANCELADO
 }

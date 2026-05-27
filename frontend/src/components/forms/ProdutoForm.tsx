@@ -9,14 +9,47 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import { Produto, Categoria } from '@/types';
 
+const parsePreco = (value: unknown) => {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return Number.NaN;
+
+  const trimmed = value.replace(/R\$\s?/i, '').trim();
+  const normalized = trimmed.includes(',')
+    ? trimmed.replace(/\./g, '').replace(',', '.')
+    : /^\d{1,3}(\.\d{3})+$/.test(trimmed)
+      ? trimmed.replace(/\./g, '')
+    : trimmed;
+
+  return Number(normalized);
+};
+
+const isPrecoFormat = (value: string) => {
+  const trimmed = value.replace(/R\$\s?/i, '').trim();
+
+  return (
+    /^(\d+|\d{1,3}(\.\d{3})+)(,\d{1,2})?$/.test(trimmed) ||
+    /^\d+\.\d{1,2}$/.test(trimmed)
+  );
+};
+
 const produtoSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
-  preco: z.coerce.number().positive('O preço deve ser maior que zero'),
+  preco: z
+    .string()
+    .min(1, 'Preço é obrigatório')
+    .refine(isPrecoFormat, 'Formato inválido. Use 100,50, 100.50 ou 10.500,50')
+    .transform(parsePreco)
+    .refine((value) => value > 0, 'O preço deve ser maior que zero'),
   estoque: z.coerce.number().min(0, 'O estoque não pode ser negativo'),
-  categoriaId: z.coerce.number().optional(),
+  categoriaId: z
+    .union([z.string(), z.number()])
+    .refine((value) => value !== '', 'A categoria não pode ser vazia')
+    .transform(Number)
+    .refine((value) => Number.isInteger(value) && value > 0, 'A categoria não pode ser vazia'),
 });
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
+type ProdutoFormValues = z.input<typeof produtoSchema>;
 
 interface ProdutoFormProps {
   initialData?: Produto;
@@ -29,20 +62,45 @@ export default function ProdutoForm({ initialData, categorias, onSubmit, isLoadi
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
-  } = useForm<ProdutoFormData>({
+  } = useForm<ProdutoFormValues, unknown, ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
     defaultValues: initialData ? {
       nome: initialData.nome,
-      preco: initialData.preco,
+      preco: initialData.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       estoque: initialData.estoque,
       categoriaId: initialData.categoriaId,
     } : {
       nome: '',
-      preco: 0,
+      preco: '',
       estoque: 0,
+      categoriaId: '',
     },
   });
+
+  const formatPreco = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return '';
+
+    const numericValue = Number(digits) / 100;
+    return numericValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
+  const precoRegister = register('preco', {
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      const formattedValue = formatPreco(event.target.value);
+      event.target.value = formattedValue;
+      setValue('preco', formattedValue, { shouldDirty: true, shouldValidate: true });
+    },
+  });
+
+  const handlePrecoFocus = (event: React.FocusEvent<HTMLInputElement>) => {
+    if (!event.target.value) {
+      event.target.value = 'R$ 0,00';
+      setValue('preco', 'R$ 0,00', { shouldDirty: true });
+    }
+  };
 
   const categoriaOptions = categorias.map(cat => ({
     value: cat.id,
@@ -61,11 +119,12 @@ export default function ProdutoForm({ initialData, categorias, onSubmit, isLoadi
         />
         <Input
           label="Preço (R$)"
-          type="number"
-          step="0.01"
-          placeholder="0,00"
+          type="text"
+          inputMode="decimal"
+          placeholder="R$ 10.500,50"
           error={errors.preco?.message}
-          {...register('preco')}
+          {...precoRegister}
+          onFocus={handlePrecoFocus}
         />
         <Input
           label="Estoque"

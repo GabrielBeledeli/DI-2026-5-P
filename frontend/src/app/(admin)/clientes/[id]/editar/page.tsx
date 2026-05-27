@@ -2,13 +2,10 @@
 
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { clienteService } from '@/services/clienteService';
 import ClienteForm, { ClienteFormData } from '@/components/forms/ClienteForm';
 import { Cliente } from '@/types';
-
-const MySwal = withReactContent(Swal);
+import { showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function EditarClientePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -22,8 +19,8 @@ export default function EditarClientePage({ params }: { params: Promise<{ id: st
       try {
         const data = await clienteService.buscarPorId(Number(id));
         setCliente(data);
-      } catch {
-        MySwal.fire('Erro', 'Não foi possível carregar os dados do cliente.', 'error');
+      } catch (error) {
+        showErrorAlert(error, 'Não foi possível carregar os dados do cliente.');
         router.push('/clientes');
       } finally {
         setLoading(false);
@@ -37,16 +34,10 @@ export default function EditarClientePage({ params }: { params: Promise<{ id: st
     try {
       setSaving(true);
       await clienteService.atualizar(Number(id), data);
-      await MySwal.fire({
-        title: 'Sucesso!',
-        text: 'Cliente atualizado com sucesso.',
-        icon: 'success',
-        background: '#1a1a1a',
-        color: '#fff',
-      });
+      await showSuccessAlert('Sucesso!', 'Cliente atualizado com sucesso.');
       router.push('/clientes');
-    } catch {
-      MySwal.fire('Erro', 'Não foi possível atualizar o cliente.', 'error');
+    } catch (error) {
+      showErrorAlert(error, 'Não foi possível atualizar o cliente.');
     } finally {
       setSaving(false);
     }

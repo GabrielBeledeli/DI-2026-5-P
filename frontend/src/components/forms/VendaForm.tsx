@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Trash2, Plus, Search } from 'lucide-react';
+import { Trash2, Plus } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
@@ -17,11 +17,12 @@ const vendaSchema = z.object({
   itens: z.array(z.object({
     produtoId: z.coerce.number().min(1, 'Selecione um produto'),
     quantidade: z.coerce.number().min(1, 'Mínimo 1'),
-    precoUnitario: z.number(),
+    precoUnitario: z.coerce.number(),
   })).min(1, 'Adicione pelo menos um item'),
 });
 
 type VendaFormData = z.infer<typeof vendaSchema>;
+type VendaFormValues = z.input<typeof vendaSchema>;
 
 interface VendaFormProps {
   clientes: Cliente[];
@@ -37,10 +38,9 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
     register,
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors },
-  } = useForm<VendaFormData>({
+  } = useForm<VendaFormValues, unknown, VendaFormData>({
     resolver: zodResolver(vendaSchema),
     defaultValues: {
       clienteId: 0,
@@ -53,11 +53,23 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
     name: "itens",
   });
 
-  const watchedItens = watch("itens");
+  const watchedItens = useWatch({
+    control,
+    name: "itens",
+    defaultValue: [],
+  });
+
+  const toNumber = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const formatCurrency = (value: number) =>
+    value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   useEffect(() => {
     const newTotal = watchedItens.reduce((acc, item) => {
-      return acc + (item.quantidade * item.precoUnitario);
+      return acc + (toNumber(item?.quantidade) * toNumber(item?.precoUnitario));
     }, 0);
     setTotal(newTotal);
   }, [watchedItens]);
@@ -69,7 +81,20 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
   const handleProdutoChange = (index: number, produtoId: string) => {
     const produto = produtos.find(p => p.id === Number(produtoId));
     if (produto) {
-      setValue(`itens.${index}.precoUnitario`, produto.preco);
+      setValue(`itens.${index}.precoUnitario`, produto.preco, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+
+      const quantidadeAtual = toNumber(watchedItens[index]?.quantidade);
+      if (quantidadeAtual > produto.estoque) {
+        setValue(`itens.${index}.quantidade`, produto.estoque, {
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true,
+        });
+      }
     }
   };
 
@@ -96,11 +121,15 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
           <div className="space-y-4">
             <Table headers={['Produto', 'Quantidade', 'Preço Unit.', 'Subtotal', 'Ações']}>
               {fields.map((field, index) => {
-                const subtotal = (watchedItens[index]?.quantidade || 0) * (watchedItens[index]?.precoUnitario || 0);
+                const quantidade = toNumber(watchedItens[index]?.quantidade);
+                const precoUnitario = toNumber(watchedItens[index]?.precoUnitario);
+                const subtotal = quantidade * precoUnitario;
+                const selectedProduto = produtos.find((produto) => produto.id === Number(watchedItens[index]?.produtoId));
                 
                 return (
                   <TableRow key={field.id}>
                     <TableCell>
+                      <input type="hidden" {...register(`itens.${index}.precoUnitario` as const)} />
                       <Select
                         options={produtos.map(p => ({ value: p.id, label: p.nome }))}
                         error={errors.itens?.[index]?.produtoId?.message}
@@ -113,16 +142,21 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
                     <TableCell>
                       <Input
                         type="number"
+                        min={1}
+                        max={selectedProduto?.estoque}
                         error={errors.itens?.[index]?.quantidade?.message}
                         {...register(`itens.${index}.quantidade` as const)}
                         className="h-9 w-20"
                       />
+                      {selectedProduto && (
+                        <p className="mt-1 text-xs text-neutral-500">Disponível: {selectedProduto.estoque}</p>
+                      )}
                     </TableCell>
                     <TableCell className="text-white font-medium">
-                      R$ {watchedItens[index]?.precoUnitario?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatCurrency(precoUnitario)}
                     </TableCell>
                     <TableCell className="text-red-500 font-bold">
-                      R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {formatCurrency(subtotal)}
                     </TableCell>
                     <TableCell>
                       <Button 
@@ -144,7 +178,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
               <div className="text-right">
                 <p className="text-sm text-neutral-500">Valor Total</p>
                 <p className="text-3xl font-bold text-white">
-                  R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {formatCurrency(total)}
                 </p>
               </div>
             </div>

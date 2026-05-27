@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { produtoService } from '@/services/produtoService';
 import { categoriaService } from '@/services/categoriaService';
 import ProdutoForm from '@/components/forms/ProdutoForm';
 import { Categoria } from '@/types';
-
-const MySwal = withReactContent(Swal);
+import { showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function NovoProdutoPage() {
   const router = useRouter();
@@ -22,7 +19,7 @@ export default function NovoProdutoPage() {
         const data = await categoriaService.listar();
         setCategorias(data);
       } catch (error) {
-        console.error('Erro ao carregar categorias');
+        showErrorAlert(error, 'Não foi possível carregar as categorias.');
       }
     };
     fetchCategorias();
@@ -32,16 +29,10 @@ export default function NovoProdutoPage() {
     try {
       setLoading(true);
       await produtoService.criar(data);
-      await MySwal.fire({
-        title: 'Sucesso!',
-        text: 'Produto cadastrado com sucesso.',
-        icon: 'success',
-        background: '#1a1a1a',
-        color: '#fff'
-      });
+      await showSuccessAlert('Sucesso!', 'Produto cadastrado com sucesso.');
       router.push('/produtos');
     } catch (error) {
-      MySwal.fire('Erro', 'Não foi possível cadastrar o produto.', 'error');
+      showErrorAlert(error, 'Não foi possível cadastrar o produto.');
     } finally {
       setLoading(false);
     }

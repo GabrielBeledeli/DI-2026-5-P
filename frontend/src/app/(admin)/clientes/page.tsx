@@ -3,16 +3,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
 import { clienteService } from '@/services/clienteService';
 import { Cliente } from '@/types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Table, { TableCell, TableRow } from '@/components/ui/Table';
-
-const MySwal = withReactContent(Swal);
+import { AppSwal as MySwal, showErrorAlert, showSuccessAlert } from '@/lib/alerts';
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -26,7 +23,7 @@ export default function ClientesPage() {
       setClientes(data);
     } catch (error) {
       console.error(error);
-      MySwal.fire('Erro', 'Não foi possível carregar os clientes.', 'error');
+      showErrorAlert(error, 'Não foi possível carregar os clientes.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +41,7 @@ export default function ClientesPage() {
       })
       .catch((error) => {
         console.error(error);
-        MySwal.fire('Erro', 'Não foi possível carregar os clientes.', 'error');
+        showErrorAlert(error, 'Não foi possível carregar os clientes.');
       })
       .finally(() => {
         if (isActive) {
@@ -83,10 +80,10 @@ export default function ClientesPage() {
     if (result.isConfirmed) {
       try {
         await clienteService.deletar(id);
-        MySwal.fire('Sucesso', 'Cliente excluído com sucesso.', 'success');
+        showSuccessAlert('Sucesso', 'Cliente excluído com sucesso.');
         await fetchClientes();
-      } catch {
-        MySwal.fire('Erro', 'Não foi possível excluir o cliente.', 'error');
+      } catch (error) {
+        showErrorAlert(error, 'Não foi possível excluir o cliente.');
       }
     }
   };

@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Footprints, Mail, Lock, Loader2 } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
-
-const MySwal = withReactContent(Swal);
+import { AppSwal as MySwal } from '@/lib/alerts';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,7 +27,8 @@ export default function LoginPage() {
           text: 'E-mail ou senha incorretos. Use admin@kickhub.com / admin123',
           icon: 'error',
           background: '#1a1a1a',
-          color: '#fff'
+          color: '#fff',
+          confirmButtonColor: '#dc2626',
         });
         setLoading(false);
       }
