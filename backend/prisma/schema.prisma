@@ -6,14 +6,32 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UsuarioPerfil {
+  ADMIN
+  VENDEDOR
+}
+
+model Usuario {
+  id        Int           @id @default(autoincrement())
+  nome      String
+  email     String        @unique
+  senha     String
+  perfil    UsuarioPerfil @default(VENDEDOR)
+  createdAt DateTime      @default(now())
+  vendas    Venda[]
+
+  @@map("usuarios")
+}
+
 model Cliente {
-  id     Int    @id @default(autoincrement())
-  nome   String
-  email  String
-  cidade String
-  estado String
-  pais   String
-  vendas Venda[]
+  id           Int      @id @default(autoincrement())
+  nome         String
+  email        String   @unique
+  cidade       String
+  estado       String
+  pais         String
+  dataCadastro DateTime @default(now())
+  vendas       Venda[]
 
   @@map("clientes")
 }
@@ -28,11 +46,16 @@ model Categoria {
 
 model Produto {
   id          Int         @id @default(autoincrement())
-  nome        String
-  preco       Float
-  estoque     Int
   categoriaId Int?
-  categoria   Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  categoria   Categoria?  @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  marca       String
+  nome        String
+  cor         String
+  genero      String
+  tamanho     String
+  preco       Float
+  estoque     Int         @default(0)
+  createdAt   DateTime    @default(now())
   itens       VendaItem[]
 
   @@map("produtos")
@@ -40,6 +63,8 @@ model Produto {
 
 model Venda {
   id        Int         @id @default(autoincrement())
+  usuarioId Int?
+  usuario   Usuario?    @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
   clienteId Int
   cliente   Cliente     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   total     Float
