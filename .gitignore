@@ -12,10 +12,26 @@ build/
 .next/
 
 # Python
-ml/venv/
+venv/
+.venv/
+env/
+.env/
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.hypothesis/
+.pytest_cache/
 
 # Prisma
 prisma/migrations/dev.db
