@@ -39,12 +39,12 @@ class ReportGenerator:
         """Fetches data from a BI view and returns a pandas DataFrame."""
         try:
             conn = self.get_bi_connection()
-            query = f"SELECT * FROM {view_name}"
+            query = f"SELECT * FROM bi.{view_name}"
             df = pd.read_sql(query, conn)
             conn.close()
             return df
         except Exception as e:
-            logger.error(f"Error fetching data from {view_name}: {str(e)}")
+            logger.error(f"Error fetching data from bi.{view_name}: {str(e)}")
             return pd.DataFrame()
 
     def create_pdf(self, filename: str, title: str, sections: List[Dict[str, Any]]) -> None:
