@@ -1,5 +1,20 @@
 import os
 import logging
+
+# Prevent hangs during numpy import on Windows with debugger
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+logger.info("Initializing ML Churn script and dependencies...")
+
 import numpy as np
 import pandas as pd
 import psycopg2
@@ -11,15 +26,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env'))
 
 class MLChurn:
     def __init__(self) -> None:
@@ -46,7 +54,7 @@ class MLChurn:
         """Fetches churn features from the BI view."""
         try:
             conn = self.get_bi_connection()
-            query = "SELECT * FROM vw_churn_features"
+            query = "SELECT * FROM bi.vw_churn_features"
             df = pd.read_sql(query, conn)
             conn.close()
             return df

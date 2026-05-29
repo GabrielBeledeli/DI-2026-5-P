@@ -10,9 +10,10 @@ from dotenv import load_dotenv
 fake = Faker('pt_BR')
 
 # Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env'), override=True)
 
 # Connection to OLTP (Source)
+print(f"🔌 Conectando ao banco: {os.getenv('OLTP_DB')} em {os.getenv('OLTP_HOST')}:{os.getenv('OLTP_PORT')}...")
 conn = psycopg2.connect(
     host=os.getenv('OLTP_HOST'),
     port=os.getenv('OLTP_PORT'),
@@ -23,8 +24,6 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 
 # ───────────────────────────────────────────
-# CONFIG — ajuste o volume aqui
-# ───────────────────────────────────────────
 QTD_CLIENTES  = 500
 QTD_PRODUTOS  = 80
 QTD_VENDAS    = 2000
@@ -33,12 +32,12 @@ QTD_VENDAS    = 2000
 MARCAS = ['Nike', 'Adidas', 'New Balance', 'Puma', 'Vans', 'Mizuno', 'Asics', 'Fila']
 MODELOS = ['Air Max', 'Samba', 'Fresh Foam', 'Suede', 'Old Skool', 'Wave', 'Gel-Nimbus', 'Disruptor']
 CORES = ['Preto', 'Branco', 'Cinza', 'Azul', 'Vermelho', 'Verde', 'Bege', 'Laranja']
-GENEROS = ['masculino', 'feminino', 'unissex', 'infantil']
+GENEROS = ['masculino', 'feminino', 'unisex', 'infantil']
 TAMANHOS = ['34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44']
 CATEGORIAS = ['Casual', 'Running', 'Social', 'Outdoor', 'Kids']
-STATUS = ['ATIVO', 'CANCELADO']
+STATUS = ['CONCLUIDA', 'CANCELADO', 'PENDENTE_PAGAMENTO']
 
-print("🌱 Iniciando seeder...")
+print("Iniciando seeder...")
 
 # 1. Categorias
 print("  → categorias...")
@@ -50,7 +49,7 @@ conn.commit()
 # 2. Usuarios
 print("  → usuarios...")
 cur.execute("TRUNCATE usuarios CASCADE")
-perfis = ['ADMIN', 'VENDEDOR']
+perfis = ['GESTOR', 'VENDEDOR']
 for i in range(10):
     cur.execute('''
         INSERT INTO usuarios (nome, email, senha, perfil)
@@ -59,7 +58,7 @@ for i in range(10):
         fake.name(),
         fake.unique.email(),
         '$2b$10$hashedpassword',
-        'ADMIN' if i == 0 else 'VENDEDOR'
+        'GESTOR' if i == 0 else 'VENDEDOR'
     ))
 conn.commit()
 
@@ -119,7 +118,8 @@ usr_ids = [r[0] for r in cur.fetchall()]
 for _ in range(QTD_VENDAS):
     cliente_id  = random.choice(cli_ids)
     usuario_id  = random.choice(usr_ids)
-    status      = random.choices(STATUS, weights=[85, 15])[0]  # 85% ATIVO
+    # Status: 70% Concluída, 10% Cancelada, 20% Pendente
+    status      = random.choices(STATUS, weights=[70, 10, 20])[0] 
     data_venda  = fake.date_time_between(start_date='-1y', end_date='now')
     itens       = random.sample(produtos, k=random.randint(1, 5))
 
@@ -132,7 +132,7 @@ for _ in range(QTD_VENDAS):
         itens_payload.append((prod_id, qtd, preco, subtotal))
 
     cur.execute('''
-        INSERT INTO vendas ("usuarioId", "clienteId", total, status, data)
+        INSERT INTO vendas ("usuarioId", "clienteId", total, status, "dataVenda")
         VALUES (%s, %s, %s, %s, %s) RETURNING id
     ''', (usuario_id, cliente_id, round(total, 2), status, data_venda))
     
@@ -150,7 +150,7 @@ cur.close()
 conn.close()
 
 print(f"""
-✅ Seeder concluído!
+   Seeder concluído!
    clientes  : {QTD_CLIENTES}
    produtos  : {QTD_PRODUTOS}
    vendas    : {QTD_VENDAS}

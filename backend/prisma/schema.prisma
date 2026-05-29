@@ -7,15 +7,21 @@ datasource db {
 }
 
 enum UsuarioPerfil {
-  ADMIN
+  GESTOR
   VENDEDOR
 }
 
+enum VendaStatus {
+  CONCLUIDA
+  CANCELADO
+  PENDENTE_PAGAMENTO
+}
+
 model Usuario {
-  id        Int           @id @default(autoincrement())
-  nome      String
-  email     String        @unique
-  senha     String
+  id        BigInt           @id @default(autoincrement())
+  nome      String        @db.VarChar(100)
+  email     String        @unique @db.VarChar(150)
+  senha     String        @db.VarChar(255)
   perfil    UsuarioPerfil @default(VENDEDOR)
   createdAt DateTime      @default(now())
   vendas    Venda[]
@@ -24,12 +30,12 @@ model Usuario {
 }
 
 model Cliente {
-  id           Int      @id @default(autoincrement())
-  nome         String
-  email        String   @unique
-  cidade       String
-  estado       String
-  pais         String
+  id           BigInt      @id @default(autoincrement())
+  nome         String   @db.VarChar(100)
+  email        String   @unique @db.VarChar(150)
+  cidade       String   @db.VarChar(100)
+  estado       String   @db.VarChar(2)
+  pais         String   @db.VarChar(60)
   dataCadastro DateTime @default(now())
   vendas       Venda[]
 
@@ -37,49 +43,49 @@ model Cliente {
 }
 
 model Categoria {
-  id       Int       @id @default(autoincrement())
-  nome     String
+  id       BigInt       @id @default(autoincrement())
+  nome     String    @db.VarChar(60)
   produtos Produto[]
 
   @@map("categorias")
 }
 
 model Produto {
-  id          Int         @id @default(autoincrement())
-  categoriaId Int?
-  categoria   Categoria?  @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
-  marca       String
-  nome        String
-  cor         String
-  genero      String
-  tamanho     String
+  id          BigInt        @id @default(autoincrement())
+  categoriaId BigInt?
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  marca       String     @db.VarChar(100)
+  nome        String     @db.VarChar(150)
+  cor         String     @db.VarChar(50)
+  genero      String     @db.VarChar(20)
+  tamanho     String     @db.VarChar(10)
   preco       Float
-  estoque     Int         @default(0)
-  createdAt   DateTime    @default(now())
+  estoque     Int        @default(0)
+  createdAt   DateTime   @default(now())
   itens       VendaItem[]
 
   @@map("produtos")
 }
 
 model Venda {
-  id        Int         @id @default(autoincrement())
-  usuarioId Int?
+  id        BigInt         @id @default(autoincrement())
+  usuarioId BigInt?
   usuario   Usuario?    @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
-  clienteId Int
+  clienteId BigInt
   cliente   Cliente     @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   total     Float
-  status    VendaStatus @default(ATIVO)
-  data      DateTime    @default(now())
+  status    VendaStatus @default(PENDENTE_PAGAMENTO)
+  dataVenda    DateTime    @default(now())
   itens     VendaItem[]
 
   @@map("vendas")
 }
 
 model VendaItem {
-  id            Int     @id @default(autoincrement())
-  vendaId       Int
+  id            BigInt     @id @default(autoincrement())
+  vendaId       BigInt
   venda         Venda   @relation(fields: [vendaId], references: [id], onDelete: Cascade)
-  produtoId     Int
+  produtoId     BigInt
   produto       Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
   quantidade    Int
   precoUnitario Float
@@ -88,7 +94,4 @@ model VendaItem {
   @@map("venda_itens")
 }
 
-enum VendaStatus {
-  ATIVO
-  CANCELADO
-}
+

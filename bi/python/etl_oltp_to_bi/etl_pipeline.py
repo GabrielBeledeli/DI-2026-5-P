@@ -1,4 +1,4 @@
-import os
+﻿import os
 import time
 import logging
 from typing import List, Dict
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 # Look for .env in the current dir, then in parent dirs (bi/)
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env'), override=True)
 
 class ETLPipeline:
     def __init__(self) -> None:

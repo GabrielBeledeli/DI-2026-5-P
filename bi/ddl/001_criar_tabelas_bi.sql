@@ -1,7 +1,7 @@
 -- BI Tables (Mirroring OLTP for Analytical Use)
 
 CREATE TABLE IF NOT EXISTS bi_usuarios (
-    id INTEGER PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     nome VARCHAR(255),
     email VARCHAR(255),
     senha VARCHAR(255),
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS bi_usuarios (
 );
 
 CREATE TABLE IF NOT EXISTS bi_clientes (
-    id INTEGER PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     nome VARCHAR(255),
     email VARCHAR(255),
     cidade VARCHAR(255),
@@ -20,13 +20,13 @@ CREATE TABLE IF NOT EXISTS bi_clientes (
 );
 
 CREATE TABLE IF NOT EXISTS bi_categorias (
-    id INTEGER PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     nome VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS bi_produtos (
-    id INTEGER PRIMARY KEY,
-    categoriaId INTEGER,
+    id BIGINT PRIMARY KEY,
+    categoriaId BIGINT,
     marca VARCHAR(255),
     nome VARCHAR(255),
     cor VARCHAR(255),
@@ -38,18 +38,18 @@ CREATE TABLE IF NOT EXISTS bi_produtos (
 );
 
 CREATE TABLE IF NOT EXISTS bi_vendas (
-    id INTEGER PRIMARY KEY,
-    usuarioId INTEGER,
-    clienteId INTEGER,
+    id BIGINT PRIMARY KEY,
+    usuarioId BIGINT,
+    clienteId BIGINT,
     total FLOAT,
     status VARCHAR(50),
-    data TIMESTAMP
+    dataVenda TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS bi_venda_itens (
-    id INTEGER PRIMARY KEY,
-    vendaId INTEGER,
-    produtoId INTEGER,
+    id BIGINT PRIMARY KEY,
+    vendaId BIGINT,
+    produtoId BIGINT,
     quantidade INTEGER,
     precoUnitario FLOAT,
     subtotal FLOAT
@@ -58,9 +58,10 @@ CREATE TABLE IF NOT EXISTS bi_venda_itens (
 -- ML Scores Table
 CREATE TABLE IF NOT EXISTS ml_cliente_scores (
     id SERIAL PRIMARY KEY,
-    cliente_id INTEGER,
+    cliente_id BIGINT,
     score_compra FLOAT,       -- 0.0 to 1.0, propensity to buy
     risco_churn FLOAT,        -- 0.0 to 1.0
     classificacao VARCHAR(50), -- 'alto', 'medio', 'baixo'
     calculado_em TIMESTAMP DEFAULT NOW()
 );
+
