@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { produtoService } from '@/services/produtoService';
-import { categoriaService } from '@/services/categoriaService';
-import ProdutoForm from '@/components/forms/ProdutoForm';
-import { Produto, Categoria } from '@/types';
-import { showErrorAlert, showSuccessAlert } from '@/lib/alerts';
+import React, { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { produtoService } from "@/services/produtoService";
+import { categoriaService } from "@/services/categoriaService";
+import ProdutoForm, { ProdutoFormData } from "@/components/forms/ProdutoForm";
+import { Produto, Categoria } from "@/types";
+import { showErrorAlert, showSuccessAlert } from "@/lib/alerts";
 
-export default function EditarProdutoPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditarProdutoPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const router = useRouter();
   const [produto, setProduto] = useState<Produto | null>(null);
@@ -21,13 +25,13 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
       try {
         const [produtoData, categoriasData] = await Promise.all([
           produtoService.buscarPorId(Number(id)),
-          categoriaService.listar()
+          categoriaService.listar(),
         ]);
         setProduto(produtoData);
         setCategorias(categoriasData);
       } catch (error) {
-        showErrorAlert(error, 'Não foi possível carregar os dados.');
-        router.push('/produtos');
+        showErrorAlert(error, "Não foi possível carregar os dados.");
+        router.push("/produtos");
       } finally {
         setLoading(false);
       }
@@ -36,14 +40,14 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
     fetchData();
   }, [id, router]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ProdutoFormData) => {
     try {
       setSaving(true);
       await produtoService.atualizar(Number(id), data);
-      await showSuccessAlert('Sucesso!', 'Produto atualizado com sucesso.');
-      router.push('/produtos');
+      await showSuccessAlert("Sucesso!", "Produto atualizado com sucesso.");
+      router.push("/produtos");
     } catch (error) {
-      showErrorAlert(error, 'Não foi possível atualizar o produto.');
+      showErrorAlert(error, "Não foi possível atualizar o produto.");
     } finally {
       setSaving(false);
     }
@@ -54,17 +58,21 @@ export default function EditarProdutoPage({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Editar Produto</h1>
-        <p className="text-neutral-500">Atualize as informações do sneaker no catálogo.</p>
+        <h1 className="text-3xl font-bold text-white tracking-tight">
+          Editar Produto
+        </h1>
+        <p className="text-neutral-500">
+          Atualize as informações do sneaker no catálogo.
+        </p>
       </div>
 
       <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-8 shadow-sm">
         {produto && (
-          <ProdutoForm 
-            initialData={produto} 
-            categorias={categorias} 
-            onSubmit={handleSubmit} 
-            isLoading={saving} 
+          <ProdutoForm
+            initialData={produto}
+            categorias={categorias}
+            onSubmit={handleSubmit}
+            isLoading={saving}
           />
         )}
       </div>
