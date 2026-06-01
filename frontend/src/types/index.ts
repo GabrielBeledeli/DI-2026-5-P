@@ -16,10 +16,15 @@ export interface Categoria {
 export interface Produto {
   id: number;
   nome: string;
+  marca?: string;
+  cor?: string;
+  genero?: string;
+  tamanho?: string;
   preco: number;
   estoque: number;
   categoriaId?: number;
   categoria?: Categoria;
+  createdAt?: string;
 }
 
 export interface VendaItem {
@@ -36,7 +41,7 @@ export interface Venda {
   id: number;
   clienteId: number;
   total: number;
-  status: 'ATIVO' | 'CANCELADO';
+  status: "ATIVO" | "CANCELADO";
   data: string;
   cliente?: Cliente;
   itens?: VendaItem[];

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProdutoPayload } from './produto.interface';
 
@@ -11,7 +15,7 @@ const parsePreco = (value: ProdutoPayload['preco']) => {
     ? trimmed.replace(/\./g, '').replace(',', '.')
     : /^\d{1,3}(\.\d{3})+$/.test(trimmed)
       ? trimmed.replace(/\./g, '')
-    : trimmed;
+      : trimmed;
 
   return Number(normalized);
 };
@@ -37,6 +41,10 @@ type ProdutoDados = {
   preco: number;
   estoque: number;
   categoriaId: number;
+  marca: string;
+  cor: string;
+  genero: string;
+  tamanho: string;
 };
 
 @Injectable()
@@ -66,12 +74,7 @@ export class ProdutosService {
   async criar(payload: Partial<ProdutoPayload>) {
     const dados = await this.validarPayload(payload);
     return this.prisma.produto.create({
-      data: {
-        nome: dados.nome,
-        preco: dados.preco,
-        estoque: dados.estoque,
-        categoriaId: dados.categoriaId,
-      },
+      data: dados,
       include: { categoria: true },
     });
   }
@@ -82,12 +85,7 @@ export class ProdutosService {
 
     return this.prisma.produto.update({
       where: { id },
-      data: {
-        nome: dados.nome,
-        preco: dados.preco,
-        estoque: dados.estoque,
-        categoriaId: dados.categoriaId,
-      },
+      data: dados,
       include: { categoria: true },
     });
   }
@@ -97,7 +95,9 @@ export class ProdutosService {
     await this.prisma.produto.delete({ where: { id } });
   }
 
-  private async validarPayload(payload: Partial<ProdutoPayload>): Promise<ProdutoDados> {
+  private async validarPayload(
+    payload: Partial<ProdutoPayload>,
+  ): Promise<ProdutoDados> {
     const nome = payload.nome?.trim().replace(/\s+/g, ' ') ?? '';
     const preco = parsePreco(payload.preco ?? Number.NaN);
     const estoque = Number(payload.estoque);
@@ -108,7 +108,9 @@ export class ProdutosService {
     }
 
     if (!isPrecoFormat(payload.preco ?? Number.NaN)) {
-      throw new BadRequestException('Formato de preco invalido. Use 100,50, 100.50 ou 10.500,50.');
+      throw new BadRequestException(
+        'Formato de preco invalido. Use 100,50, 100.50 ou 10.500,50.',
+      );
     }
 
     if (!Number.isFinite(preco) || preco <= 0) {
@@ -123,11 +125,22 @@ export class ProdutosService {
       throw new BadRequestException('A categoria não pode ser vazia.');
     }
 
-    const categoria = await this.prisma.categoria.findUnique({ where: { id: categoriaId } });
+    const categoria = await this.prisma.categoria.findUnique({
+      where: { id: categoriaId },
+    });
     if (!categoria) {
       throw new BadRequestException('Categoria invalida.');
     }
 
-    return { nome, preco, estoque, categoriaId };
+    return {
+      nome,
+      preco,
+      estoque,
+      categoriaId,
+      marca: payload.marca?.trim() ?? 'N/A',
+      cor: payload.cor?.trim() ?? 'N/A',
+      genero: payload.genero?.trim() ?? 'N/A',
+      tamanho: payload.tamanho?.trim() ?? 'N/A',
+    };
   }
 }
