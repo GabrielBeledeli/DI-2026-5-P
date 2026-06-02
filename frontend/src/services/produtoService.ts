@@ -1,14 +1,25 @@
 import { Produto } from "@/types";
 import api from "./api";
-import { extractArray } from "./responseUtils";
+import { extractArray, extractPaginated } from "./responseUtils";
 
 export type ProdutoCreatePayload = Omit<Produto, "id" | "categoria">;
 export type ProdutoUpdatePayload = Partial<Omit<Produto, "id" | "categoria">>;
+type ListarPaginadoParams = {
+  page?: number;
+  limit?: number;
+};
 
 export const produtoService = {
   listar: async () => {
     const response = await api.get<unknown>("/produtos");
     return extractArray<Produto>(response.data, ["produtos"]);
+  },
+
+  listarPaginado: async (params: ListarPaginadoParams = {}) => {
+    const response = await api.get<unknown>("/produtos", {
+      params: { page: params.page ?? 1, limit: params.limit ?? 50 },
+    });
+    return extractPaginated<Produto>(response.data);
   },
 
   buscarPorId: async (id: number) => {

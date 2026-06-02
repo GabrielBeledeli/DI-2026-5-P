@@ -1,11 +1,23 @@
 import { Cliente } from '@/types';
 import api from './api';
-import { extractArray } from './responseUtils';
+import { extractArray, extractPaginated } from './responseUtils';
+
+type ListarPaginadoParams = {
+  page?: number;
+  limit?: number;
+};
 
 export const clienteService = {
   listar: async () => {
     const response = await api.get<unknown>('/clientes');
     return extractArray<Cliente>(response.data, ['clientes']);
+  },
+
+  listarPaginado: async (params: ListarPaginadoParams = {}) => {
+    const response = await api.get<unknown>('/clientes', {
+      params: { page: params.page ?? 1, limit: params.limit ?? 50 },
+    });
+    return extractPaginated<Cliente>(response.data);
   },
 
   buscarPorId: async (id: number) => {

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriaPayload } from './categoria.interface';
 
@@ -16,6 +17,26 @@ export class CategoriasService {
       ...categoria,
       totalProdutos: _count.produtos,
     }));
+  }
+
+  async listarPaginado(query: PaginationQuery) {
+    const pagination = parsePagination(query);
+    const [categorias, total] = await Promise.all([
+      this.prisma.categoria.findMany({
+        skip: pagination.skip,
+        take: pagination.limit,
+        include: { _count: { select: { produtos: true } } },
+        orderBy: { id: 'asc' },
+      }),
+      this.prisma.categoria.count(),
+    ]);
+
+    const data = categorias.map(({ _count, ...categoria }) => ({
+      ...categoria,
+      totalProdutos: _count.produtos,
+    }));
+
+    return toPaginatedResponse(data, total, pagination);
   }
 
   async buscarPorId(id: number) {

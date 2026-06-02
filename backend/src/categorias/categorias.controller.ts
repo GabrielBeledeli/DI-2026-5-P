@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { hasPaginationQuery } from '../common/pagination';
+import type { PaginationQuery } from '../common/pagination';
 import { CategoriaPayload } from './categoria.interface';
 import { CategoriasService } from './categorias.service';
 
@@ -7,7 +9,11 @@ export class CategoriasController {
   constructor(private readonly categoriasService: CategoriasService) {}
 
   @Get()
-  listar() {
+  listar(@Query() query: PaginationQuery) {
+    if (hasPaginationQuery(query)) {
+      return this.categoriasService.listarPaginado(query);
+    }
+
     return this.categoriasService.listar();
   }
 

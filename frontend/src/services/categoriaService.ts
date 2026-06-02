@@ -1,11 +1,23 @@
 import { Categoria } from '@/types';
 import api from './api';
-import { extractArray } from './responseUtils';
+import { extractArray, extractPaginated } from './responseUtils';
+
+type ListarPaginadoParams = {
+  page?: number;
+  limit?: number;
+};
 
 export const categoriaService = {
   listar: async () => {
     const response = await api.get<unknown>('/categorias');
     return extractArray<Categoria>(response.data, ['categorias']);
+  },
+
+  listarPaginado: async (params: ListarPaginadoParams = {}) => {
+    const response = await api.get<unknown>('/categorias', {
+      params: { page: params.page ?? 1, limit: params.limit ?? 50 },
+    });
+    return extractPaginated<Categoria>(response.data);
   },
 
   buscarPorId: async (id: number) => {

@@ -49,9 +49,13 @@ export function TableRow({ children, className }: { children: React.ReactNode, c
   );
 }
 
-export function TableCell({ children, className }: { children: React.ReactNode, className?: string }) {
+export function TableCell({
+  children,
+  className,
+  ...props
+}: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn("whitespace-nowrap px-6 py-4", className)}>
+    <td className={cn("whitespace-nowrap px-6 py-4", className)} {...props}>
       {children}
     </td>
   );
