@@ -32,11 +32,23 @@ const isPrecoFormat = (value: string) => {
   );
 };
 
+const generoOptions = [
+  { value: "feminino", label: "Feminino" },
+  { value: "masculino", label: "Masculino" },
+  { value: "unisex", label: "Unissex" },
+];
+
 const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   marca: z.string().min(1, "Marca é obrigatória"),
   cor: z.string().min(1, "Cor é obrigatória"),
-  genero: z.string().min(1, "Gênero é obrigatório"),
+  genero: z
+    .string()
+    .min(1, "Gênero é obrigatório")
+    .refine(
+      (value) => generoOptions.some((option) => option.value === value),
+      "Selecione um gênero válido",
+    ),
   tamanho: z
     .union([z.string(), z.number()])
     .transform((value) => String(value).trim())
@@ -168,9 +180,9 @@ export default function ProdutoForm({
           error={errors.cor?.message}
           {...register("cor")}
         />
-        <Input
+        <Select
           label="Gênero"
-          placeholder="Ex: Unissex"
+          options={generoOptions}
           error={errors.genero?.message}
           {...register("genero")}
         />

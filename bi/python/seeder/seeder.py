@@ -32,10 +32,12 @@ QTD_VENDAS    = 2000
 MARCAS = ['Nike', 'Adidas', 'New Balance', 'Puma', 'Vans', 'Mizuno', 'Asics', 'Fila']
 MODELOS = ['Air Max', 'Samba', 'Fresh Foam', 'Suede', 'Old Skool', 'Wave', 'Gel-Nimbus', 'Disruptor']
 CORES = ['Preto', 'Branco', 'Cinza', 'Azul', 'Vermelho', 'Verde', 'Bege', 'Laranja']
-GENEROS = ['masculino', 'feminino', 'unisex', 'infantil']
+GENEROS = ['masculino', 'feminino', 'unisex']
 TAMANHOS = ['34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44']
 CATEGORIAS = ['Casual', 'Running', 'Social', 'Outdoor', 'Kids']
 STATUS = ['CONCLUIDA', 'CANCELADO', 'PENDENTE_PAGAMENTO']
+SENHA_ADMIN_HASH = '$2b$10$3VfHg5jJV5iZBJcRDNMur.V3yrvlO01Xzs4TkuG0wfUj3ezhD43Wi'
+SENHA_VENDEDOR_HASH = '$2b$10$K0fHdpZbGIC/YVEqy3iEwuEu0TtB5uuyZ6RTyPxGF0upZvJY35.Q2'
 
 print("Iniciando seeder...")
 
@@ -49,15 +51,18 @@ conn.commit()
 # 2. Usuarios
 print("  → usuarios...")
 cur.execute("TRUNCATE usuarios CASCADE")
-perfis = ['GESTOR', 'VENDEDOR']
 for i in range(10):
+    nome = 'Administrador KickHub' if i == 0 else fake.name()
+    email = 'admin@kickhub.com' if i == 0 else fake.unique.email()
+    senha = SENHA_ADMIN_HASH if i == 0 else SENHA_VENDEDOR_HASH
+
     cur.execute('''
         INSERT INTO usuarios (nome, email, senha, perfil)
         VALUES (%s, %s, %s, %s)
     ''', (
-        fake.name(),
-        fake.unique.email(),
-        '$2b$10$hashedpassword',
+        nome,
+        email,
+        senha,
         'GESTOR' if i == 0 else 'VENDEDOR'
     ))
 conn.commit()

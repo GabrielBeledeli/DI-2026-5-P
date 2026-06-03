@@ -7,6 +7,7 @@ export type ProdutoUpdatePayload = Partial<Omit<Produto, "id" | "categoria">>;
 type ListarPaginadoParams = {
   page?: number;
   limit?: number;
+  search?: string;
 };
 
 export const produtoService = {
@@ -17,7 +18,11 @@ export const produtoService = {
 
   listarPaginado: async (params: ListarPaginadoParams = {}) => {
     const response = await api.get<unknown>("/produtos", {
-      params: { page: params.page ?? 1, limit: params.limit ?? 50 },
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 50,
+        search: params.search?.trim() || undefined,
+      },
     });
     return extractPaginated<Produto>(response.data);
   },

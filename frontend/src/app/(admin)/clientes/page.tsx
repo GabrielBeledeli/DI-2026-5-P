@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { clienteService } from "@/services/clienteService";
 import { Cliente, PaginationMeta } from "@/types";
@@ -25,19 +26,30 @@ const initialPagination: PaginationMeta = {
 };
 
 export default function ClientesPage() {
+  return (
+    <Suspense fallback={null}>
+      <ClientesContent />
+    </Suspense>
+  );
+}
+
+function ClientesContent() {
+  const searchParams = useSearchParams();
+  const searchParam = searchParams.get("search") ?? "";
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParam);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] =
     useState<PaginationMeta>(initialPagination);
 
-  const fetchClientes = async (pageToLoad = page) => {
+  const fetchClientes = useCallback(async (pageToLoad = page, search = searchTerm) => {
     try {
       setLoading(true);
       const response = await clienteService.listarPaginado({
         page: pageToLoad,
         limit: PAGE_SIZE,
+        search,
       });
       setClientes(response.data);
       setPagination(response.meta);
@@ -47,22 +59,15 @@ export default function ClientesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
 
   useEffect(() => {
-    fetchClientes(page);
-  }, [page]);
+    const timeoutId = window.setTimeout(() => {
+      fetchClientes(page, searchTerm);
+    }, 300);
 
-  const filteredClientes = useMemo(() => {
-    const normalizedSearch = searchTerm.toLowerCase();
-
-    return clientes.filter(
-      (cliente) =>
-        cliente.nome.toLowerCase().includes(normalizedSearch) ||
-        cliente.email.toLowerCase().includes(normalizedSearch) ||
-        cliente.cidade.toLowerCase().includes(normalizedSearch),
-    );
-  }, [clientes, searchTerm]);
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchClientes, page, searchTerm]);
 
   const handleDelete = async (id: number, nome: string) => {
     const result = await MySwal.fire({
@@ -116,7 +121,10 @@ export default function ClientesPage() {
               placeholder="Buscar por nome, e-mail ou cidade..."
               className="w-full rounded-lg border border-neutral-800 bg-[#0f0f0f] py-2 pl-10 pr-4 text-sm text-white focus:border-red-600 focus:outline-none"
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => {
+                setPage(1);
+                setSearchTerm(event.target.value);
+              }}
             />
           </div>
         </div>
@@ -125,7 +133,7 @@ export default function ClientesPage() {
           headers={["Nome", "E-mail", "Cidade", "Pais", "Acoes"]}
           isLoading={loading}
         >
-          {filteredClientes.map((cliente) => (
+          {clientes.map((cliente) => (
             <TableRow key={cliente.id}>
               <TableCell className="font-medium text-white">
                 {cliente.nome}
@@ -160,7 +168,7 @@ export default function ClientesPage() {
               </TableCell>
             </TableRow>
           ))}
-          {!loading && filteredClientes.length === 0 && (
+          {!loading && clientes.length === 0 && (
             <TableRow>
               <TableCell
                 colSpan={5}

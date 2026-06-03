@@ -2,37 +2,41 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Footprints, Mail, Lock, Loader2 } from 'lucide-react';
-import Input from '@/components/ui/Input';
+import { Eye, EyeOff, Footprints, Lock, Mail } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { AppSwal as MySwal } from '@/lib/alerts';
+import api from '@/services/api';
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulação de login
-    setTimeout(() => {
-      if (email === 'admin@kickhub.com' && password === 'admin123') {
-        router.push('/dashboard');
-      } else {
-        MySwal.fire({
-          title: 'Erro de Acesso',
-          text: 'E-mail ou senha incorretos. Use admin@kickhub.com / admin123',
-          icon: 'error',
-          background: '#1a1a1a',
-          color: '#fff',
-          confirmButtonColor: '#dc2626',
-        });
-        setLoading(false);
-      }
-    }, 1500);
+    try {
+      const { data } = await api.post('/auth/login', {
+        email,
+        senha: password,
+      });
+
+      localStorage.setItem('kickhub_usuario', JSON.stringify(data.usuario));
+      router.push('/dashboard');
+    } catch {
+      MySwal.fire({
+        title: 'Erro de Acesso',
+        text: 'E-mail ou senha incorretos.',
+        icon: 'error',
+        background: '#1a1a1a',
+        color: '#fff',
+        confirmButtonColor: '#dc2626',
+      });
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,32 +73,22 @@ export default function LoginPage() {
                 <Lock className="h-5 w-5 text-neutral-600" />
               </div>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                className="block w-full rounded-lg border border-neutral-800 bg-[#0f0f0f] py-3 pl-10 pr-3 text-sm text-white placeholder-neutral-600 focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
+                className="block w-full rounded-lg border border-neutral-800 bg-[#0f0f0f] py-3 pl-10 pr-12 text-sm text-white placeholder-neutral-600 focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
                 placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 rounded border-neutral-800 bg-[#0f0f0f] text-red-600 focus:ring-red-600"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-xs text-neutral-500">
-                Lembrar de mim
-              </label>
-            </div>
-            <div className="text-xs">
-              <a href="#" className="font-medium text-red-600 hover:text-red-500">
-                Esqueceu a senha?
-              </a>
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-neutral-500 transition-colors hover:text-white"
+                aria-label={showPassword ? 'Esconder senha' : 'Visualizar senha'}
+                title={showPassword ? 'Esconder senha' : 'Visualizar senha'}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
@@ -103,7 +97,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-xs text-neutral-600 mt-8">
+        <p className="mt-8 text-center text-xs text-neutral-600">
           &copy; 2026 KickHub. Todos os direitos reservados.
         </p>
       </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { produtoService } from "@/services/produtoService";
 import { PaginationMeta, Produto } from "@/types";
@@ -25,19 +26,30 @@ const initialPagination: PaginationMeta = {
 };
 
 export default function ProdutosPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProdutosContent />
+    </Suspense>
+  );
+}
+
+function ProdutosContent() {
+  const searchParams = useSearchParams();
+  const searchParam = searchParams.get("search") ?? "";
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParam);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] =
     useState<PaginationMeta>(initialPagination);
 
-  const fetchProdutos = async (pageToLoad = page) => {
+  const fetchProdutos = useCallback(async (pageToLoad = page, search = searchTerm) => {
     try {
       setLoading(true);
       const response = await produtoService.listarPaginado({
         page: pageToLoad,
         limit: PAGE_SIZE,
+        search,
       });
       setProdutos(response.data);
       setPagination(response.meta);
@@ -47,26 +59,15 @@ export default function ProdutosPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
 
   useEffect(() => {
-    fetchProdutos(page);
-  }, [page]);
+    const timeoutId = window.setTimeout(() => {
+      fetchProdutos(page, searchTerm);
+    }, 300);
 
-  const filteredProdutos = useMemo(() => {
-    const normalizedSearch = searchTerm.toLowerCase().trim();
-
-    if (!normalizedSearch) {
-      return produtos;
-    }
-
-    return produtos.filter(
-      (produto) =>
-        produto.nome.toLowerCase().includes(normalizedSearch) ||
-        produto.marca?.toLowerCase().includes(normalizedSearch) ||
-        produto.categoria?.nome?.toLowerCase().includes(normalizedSearch),
-    );
-  }, [produtos, searchTerm]);
+    return () => window.clearTimeout(timeoutId);
+  }, [fetchProdutos, page, searchTerm]);
 
   const handleDelete = async (id: number, nome: string) => {
     const result = await MySwal.fire({
@@ -148,7 +149,10 @@ export default function ProdutosPage() {
               placeholder="Buscar por nome, marca ou categoria..."
               className="w-full rounded-lg border border-neutral-800 bg-[#0f0f0f] py-2 pl-10 pr-4 text-sm text-white focus:border-red-600 focus:outline-none"
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => {
+                setPage(1);
+                setSearchTerm(event.target.value);
+              }}
             />
           </div>
         </div>
@@ -167,7 +171,7 @@ export default function ProdutosPage() {
           ]}
           isLoading={loading}
         >
-          {filteredProdutos.map((produto) => (
+          {produtos.map((produto) => (
             <TableRow key={produto.id}>
               <TableCell className="font-medium text-white">
                 {produto.nome}
@@ -228,7 +232,7 @@ export default function ProdutosPage() {
               </TableCell>
             </TableRow>
           ))}
-          {!loading && filteredProdutos.length === 0 && (
+          {!loading && produtos.length === 0 && (
             <TableRow>
               <TableCell
                 colSpan={9}

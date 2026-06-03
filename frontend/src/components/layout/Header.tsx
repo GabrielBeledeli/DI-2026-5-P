@@ -1,28 +1,67 @@
 "use client";
 
-import React from 'react';
-import { Search, User } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { LogOut, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+type UsuarioLogado = {
+  nome: string;
+  email: string;
+  perfil: string;
+};
 
 export default function Header() {
-  return (
-    <header className="fixed top-0 right-0 z-30 flex h-16 w-[calc(100%-16rem)] items-center justify-between border-b border-neutral-800 bg-[#0f0f0f]/80 px-8 backdrop-blur-md">
-      <div className="relative w-96">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search className="h-4 w-4 text-neutral-500" />
-        </div>
-        <input
-          type="text"
-          className="block w-full rounded-lg border border-neutral-800 bg-[#1a1a1a] py-2 pl-10 pr-3 text-sm text-neutral-300 placeholder-neutral-500 focus:border-red-600 focus:outline-none focus:ring-1 focus:ring-red-600"
-          placeholder="Buscar no sistema..."
-        />
-      </div>
+  const router = useRouter();
+  const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
 
-      <div className="flex items-center gap-4">
-        <button className="flex items-center gap-2 rounded-lg p-1 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white transition-colors">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800">
-            <User size={18} />
+  useEffect(() => {
+    const usuarioSalvo = localStorage.getItem('kickhub_usuario');
+
+    if (usuarioSalvo) {
+      setUsuario(JSON.parse(usuarioSalvo));
+    }
+  }, []);
+
+  const iniciais = useMemo(() => {
+    if (!usuario?.nome) {
+      return 'KH';
+    }
+
+    return usuario.nome
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((parte) => parte[0])
+      .join('')
+      .toUpperCase();
+  }, [usuario]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('kickhub_usuario');
+    router.push('/login');
+  };
+
+  return (
+    <header className="fixed right-0 top-0 z-30 flex h-16 w-[calc(100%-16rem)] items-center justify-end border-b border-neutral-800 bg-[#0f0f0f]/80 px-8 backdrop-blur-md">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-lg px-2 py-1 text-neutral-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-xs font-semibold text-white">
+            {usuario ? iniciais : <User size={18} />}
           </div>
-          <span className="text-sm font-medium">Perfil</span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-medium text-white">{usuario?.nome ?? 'Perfil'}</span>
+            <span className="text-xs text-neutral-500">{usuario?.perfil ?? 'Usuário'}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-[#1a1a1a] hover:text-white"
+          title="Sair"
+          aria-label="Sair"
+        >
+          <LogOut size={18} />
         </button>
       </div>
     </header>
