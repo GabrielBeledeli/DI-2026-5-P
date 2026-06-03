@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cliente, ClientePayload } from './cliente.interface';
@@ -10,6 +11,10 @@ const capitalizeWords = (value: string) =>
     .toLowerCase()
     .replace(/\s+/g, ' ')
     .replace(/(^|\s)(\S)/g, (match) => match.toUpperCase());
+
+type ClientesQuery = PaginationQuery & {
+  search?: string;
+};
 
 @Injectable()
 export class ClientesService {
@@ -23,18 +28,42 @@ export class ClientesService {
     });
   }
 
-  async listarPaginado(query: PaginationQuery) {
+  async listarPaginado(query: ClientesQuery) {
     const pagination = parsePagination(query);
+    const where = this.buildWhere(query);
     const [clientes, total] = await Promise.all([
       this.prisma.cliente.findMany({
+        where,
         skip: pagination.skip,
         take: pagination.limit,
         orderBy: { id: 'asc' },
       }),
-      this.prisma.cliente.count(),
+      this.prisma.cliente.count({ where }),
     ]);
 
     return toPaginatedResponse(clientes, total, pagination);
+  }
+
+  private buildWhere(query: ClientesQuery): Prisma.ClienteWhereInput {
+    const search = query.search?.trim();
+
+    if (!search) {
+      return {};
+    }
+
+    const or: Prisma.ClienteWhereInput[] = [
+      { nome: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { cidade: { contains: search, mode: 'insensitive' } },
+      { estado: { contains: search, mode: 'insensitive' } },
+      { pais: { contains: search, mode: 'insensitive' } },
+    ];
+
+    if (/^\d+$/.test(search)) {
+      or.push({ id: Number(search) });
+    }
+
+    return { OR: or };
   }
 
   async buscarPorId(id: number): Promise<Cliente> {

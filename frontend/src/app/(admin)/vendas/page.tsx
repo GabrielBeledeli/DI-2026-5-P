@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Plus, Eye, Trash2, Search, Filter } from "lucide-react";
 import { vendaService } from "@/services/vendaService";
 import { PaginationMeta, Venda } from "@/types";
@@ -42,9 +43,19 @@ const statusVariant: Record<
 };
 
 export default function VendasPage() {
+  return (
+    <Suspense fallback={null}>
+      <VendasContent />
+    </Suspense>
+  );
+}
+
+function VendasContent() {
+  const searchParams = useSearchParams();
+  const searchParam = searchParams.get("search") ?? "";
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParam);
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [dataInicio, setDataInicio] = useState("");

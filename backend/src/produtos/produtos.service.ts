@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProdutoPayload } from './produto.interface';
@@ -48,6 +49,10 @@ type ProdutoDados = {
   tamanho: string;
 };
 
+type ProdutosQuery = PaginationQuery & {
+  search?: string;
+};
+
 @Injectable()
 export class ProdutosService {
   constructor(private readonly prisma: PrismaService) {}
@@ -59,19 +64,53 @@ export class ProdutosService {
     });
   }
 
-  async listarPaginado(query: PaginationQuery) {
+  async listarPaginado(query: ProdutosQuery) {
     const pagination = parsePagination(query);
+    const where = this.buildWhere(query);
     const [produtos, total] = await Promise.all([
       this.prisma.produto.findMany({
+        where,
         skip: pagination.skip,
         take: pagination.limit,
         include: { categoria: true },
         orderBy: { id: 'asc' },
       }),
-      this.prisma.produto.count(),
+      this.prisma.produto.count({ where }),
     ]);
 
     return toPaginatedResponse(produtos, total, pagination);
+  }
+
+  private buildWhere(query: ProdutosQuery): Prisma.ProdutoWhereInput {
+    const search = query.search?.trim();
+
+    if (!search) {
+      return {};
+    }
+
+    const or: Prisma.ProdutoWhereInput[] = [
+      { nome: { contains: search, mode: 'insensitive' } },
+      { marca: { contains: search, mode: 'insensitive' } },
+      { cor: { contains: search, mode: 'insensitive' } },
+      { genero: { contains: search, mode: 'insensitive' } },
+      { tamanho: { contains: search, mode: 'insensitive' } },
+      {
+        categoria: {
+          nome: { contains: search, mode: 'insensitive' },
+        },
+      },
+    ];
+
+    if (/^\d+$/.test(search)) {
+      or.push({ id: Number(search) });
+    }
+
+    const price = parsePreco(search);
+    if (Number.isFinite(price) && price > 0) {
+      or.push({ preco: price });
+    }
+
+    return { OR: or };
   }
 
   async buscarPorId(id: number) {

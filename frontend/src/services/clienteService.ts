@@ -5,6 +5,7 @@ import { extractArray, extractPaginated } from './responseUtils';
 type ListarPaginadoParams = {
   page?: number;
   limit?: number;
+  search?: string;
 };
 
 export const clienteService = {
@@ -15,7 +16,11 @@ export const clienteService = {
 
   listarPaginado: async (params: ListarPaginadoParams = {}) => {
     const response = await api.get<unknown>('/clientes', {
-      params: { page: params.page ?? 1, limit: params.limit ?? 50 },
+      params: {
+        page: params.page ?? 1,
+        limit: params.limit ?? 50,
+        search: params.search?.trim() || undefined,
+      },
     });
     return extractPaginated<Cliente>(response.data);
   },
