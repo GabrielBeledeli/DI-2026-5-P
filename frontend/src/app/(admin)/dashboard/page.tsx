@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Users, 
   Package, 
   ShoppingCart, 
   AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  DollarSign
+  DollarSign,
+  Plus
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -25,7 +25,6 @@ import {
 import { Bar, Pie } from 'react-chartjs-2';
 import Card from '@/components/ui/Card';
 import Table, { TableRow, TableCell } from '@/components/ui/Table';
-import Badge from '@/components/ui/Badge';
 import { vendaService } from '@/services/vendaService';
 import { clienteService } from '@/services/clienteService';
 import { produtoService } from '@/services/produtoService';
@@ -47,7 +46,6 @@ export default function DashboardPage() {
   const [vendas, setVendas] = useState<Venda[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,8 +60,6 @@ export default function DashboardPage() {
         setProdutos(produtosData || []);
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
@@ -71,9 +67,33 @@ export default function DashboardPage() {
 
   const totalVendas = vendas.length;
   const totalClientes = clientes.length;
-  const totalProdutos = produtos.length;
   const estoqueBaixo = produtos.filter(p => p.estoque < 5).length;
-  const faturamentoTotal = vendas.reduce((acc, v) => acc + (v.status === 'ATIVO' ? v.total : 0), 0);
+  const faturamentoTotal = vendas.reduce((acc, venda) => {
+    if (venda.status === 'CANCELADO') return acc;
+
+    return acc + Number(venda.total || 0);
+  }, 0);
+  const topClientes = clientes
+    .map((cliente) => {
+      const vendasCliente = vendas.filter(
+        (venda) =>
+          String(venda.clienteId) === String(cliente.id) &&
+          venda.status !== 'CANCELADO',
+      );
+      const totalGasto = vendasCliente.reduce(
+        (acc, venda) => acc + Number(venda.total || 0),
+        0,
+      );
+
+      return {
+        cliente,
+        totalVendas: vendasCliente.length,
+        totalGasto,
+      };
+    })
+    .filter((item) => item.totalVendas > 0)
+    .sort((a, b) => b.totalGasto - a.totalGasto)
+    .slice(0, 5);
 
   // Dados fictícios para os gráficos baseados nos dados reais (ou mockados se vazio)
   const barData = {
@@ -177,15 +197,22 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card title="Top 5 Clientes" className="lg:col-span-2">
           <Table headers={['Cliente', 'Vendas', 'Total Gasto']}>
-            {clientes.slice(0, 5).map((cliente, i) => (
+            {topClientes.map(({ cliente, totalVendas, totalGasto }) => (
               <TableRow key={cliente.id}>
                 <TableCell className="font-medium text-white">{cliente.nome}</TableCell>
-                <TableCell>{Math.floor(Math.random() * 10) + 1}</TableCell>
+                <TableCell>{totalVendas}</TableCell>
                 <TableCell className="text-red-500 font-bold">
-                  R$ {(Math.random() * 5000 + 1000).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {totalGasto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </TableCell>
               </TableRow>
             ))}
+            {topClientes.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="py-10 text-center text-neutral-500">
+                  Nenhuma venda realizada.
+                </TableCell>
+              </TableRow>
+            )}
           </Table>
         </Card>
         
@@ -216,7 +243,15 @@ export default function DashboardPage() {
   );
 }
 
-function SummaryCard({ title, value, icon, trend, trendColor = "text-green-500" }: any) {
+type SummaryCardProps = {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  trend: string;
+  trendColor?: string;
+};
+
+function SummaryCard({ title, value, icon, trend, trendColor = "text-green-500" }: SummaryCardProps) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -231,10 +266,14 @@ function SummaryCard({ title, value, icon, trend, trendColor = "text-green-500" 
   );
 }
 
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
+type QuickActionButtonProps = {
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ReactNode;
+};
 
-function QuickActionButton({ title, description, href, icon }: any) {
+function QuickActionButton({ title, description, href, icon }: QuickActionButtonProps) {
   return (
     <Link 
       href={href}
