@@ -64,6 +64,21 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
+  const parseCurrencyNumber = (value: unknown) => {
+    if (typeof value === "number") return value;
+    if (typeof value !== "string") return 0;
+
+    const trimmed = value.replace(/R\$\s?/i, "").trim();
+    const normalized = trimmed.includes(",")
+      ? trimmed.replace(/\./g, "").replace(",", ".")
+      : trimmed;
+
+    return toNumber(normalized);
+  };
+
+  const findProdutoById = (produtoId: unknown) =>
+    produtos.find((produto) => String(produto.id) === String(produtoId));
+
   const formatCurrency = (value: number) =>
     value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -79,9 +94,9 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
   };
 
   const handleProdutoChange = (index: number, produtoId: string) => {
-    const produto = produtos.find(p => p.id === Number(produtoId));
+    const produto = findProdutoById(produtoId);
     if (produto) {
-      setValue(`itens.${index}.precoUnitario`, produto.preco, {
+      setValue(`itens.${index}.precoUnitario`, parseCurrencyNumber(produto.preco), {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
@@ -124,7 +139,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading }: V
                 const quantidade = toNumber(watchedItens[index]?.quantidade);
                 const precoUnitario = toNumber(watchedItens[index]?.precoUnitario);
                 const subtotal = quantidade * precoUnitario;
-                const selectedProduto = produtos.find((produto) => produto.id === Number(watchedItens[index]?.produtoId));
+                const selectedProduto = findProdutoById(watchedItens[index]?.produtoId);
                 
                 return (
                   <TableRow key={field.id}>

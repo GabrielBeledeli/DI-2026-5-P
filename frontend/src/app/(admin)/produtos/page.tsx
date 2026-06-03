@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Search, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { produtoService } from "@/services/produtoService";
-import { Produto } from "@/types";
+import { PaginationMeta, Produto } from "@/types";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import Pagination from "@/components/ui/Pagination";
 import Table, { TableRow, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import {
@@ -15,36 +16,57 @@ import {
   showSuccessAlert,
 } from "@/lib/alerts";
 
+const PAGE_SIZE = 50;
+const initialPagination: PaginationMeta = {
+  page: 1,
+  limit: PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
+};
+
 export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [filteredProdutos, setFilteredProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] =
+    useState<PaginationMeta>(initialPagination);
 
-  const fetchProdutos = async () => {
+  const fetchProdutos = async (pageToLoad = page) => {
     try {
       setLoading(true);
-      const data = await produtoService.listar();
-      setProdutos(data);
-      setFilteredProdutos(data);
+      const response = await produtoService.listarPaginado({
+        page: pageToLoad,
+        limit: PAGE_SIZE,
+      });
+      setProdutos(response.data);
+      setPagination(response.meta);
     } catch (error) {
       console.error(error);
-      showErrorAlert(error, "Não foi possível carregar os produtos.");
+      showErrorAlert(error, "Nao foi possivel carregar os produtos.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProdutos();
-  }, []);
+    fetchProdutos(page);
+  }, [page]);
 
-  useEffect(() => {
-    const filtered = produtos.filter((p) =>
-      p.nome.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredProdutos = useMemo(() => {
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+
+    if (!normalizedSearch) {
+      return produtos;
+    }
+
+    return produtos.filter(
+      (produto) =>
+        produto.nome.toLowerCase().includes(normalizedSearch) ||
+        produto.marca?.toLowerCase().includes(normalizedSearch) ||
+        produto.categoria?.nome?.toLowerCase().includes(normalizedSearch),
     );
-    setFilteredProdutos(filtered);
-  }, [searchTerm, produtos]);
+  }, [produtos, searchTerm]);
 
   const handleDelete = async (id: number, nome: string) => {
     const result = await MySwal.fire({
@@ -62,10 +84,10 @@ export default function ProdutosPage() {
     if (result.isConfirmed) {
       try {
         await produtoService.deletar(id);
-        showSuccessAlert("Sucesso", "Produto excluído com sucesso.");
-        fetchProdutos();
+        showSuccessAlert("Sucesso", "Produto excluido com sucesso.");
+        await fetchProdutos(page);
       } catch (error) {
-        showErrorAlert(error, "Não foi possível excluir o produto.");
+        showErrorAlert(error, "Nao foi possivel excluir o produto.");
       }
     }
   };
@@ -73,9 +95,8 @@ export default function ProdutosPage() {
   const getCategoriaBadge = (categoria?: string) => {
     const cat = categoria?.toLowerCase() || "";
     if (cat.includes("casual")) return <Badge variant="info">Casual</Badge>;
-    if (cat.includes("running"))
-      return <Badge variant="success">Running</Badge>;
-    if (cat.includes("social"))
+    if (cat.includes("running")) return <Badge variant="success">Running</Badge>;
+    if (cat.includes("social")) {
       return (
         <Badge
           variant="default"
@@ -84,9 +105,9 @@ export default function ProdutosPage() {
           Social
         </Badge>
       );
-    if (cat.includes("outdoor"))
-      return <Badge variant="warning">Outdoor</Badge>;
-    if (cat.includes("kids"))
+    }
+    if (cat.includes("outdoor")) return <Badge variant="warning">Outdoor</Badge>;
+    if (cat.includes("kids")) {
       return (
         <Badge
           variant="default"
@@ -95,6 +116,7 @@ export default function ProdutosPage() {
           Kids
         </Badge>
       );
+    }
     return <Badge variant="outline">{categoria || "Sem categoria"}</Badge>;
   };
 
@@ -106,7 +128,7 @@ export default function ProdutosPage() {
             Produtos
           </h1>
           <p className="text-neutral-500">
-            Catálogo de sneakers e controle de estoque.
+            Catalogo de sneakers e controle de estoque.
           </p>
         </div>
         <Link href="/produtos/novo">
@@ -123,10 +145,10 @@ export default function ProdutosPage() {
             />
             <input
               type="text"
-              placeholder="Buscar por nome do produto..."
+              placeholder="Buscar por nome, marca ou categoria..."
               className="w-full rounded-lg border border-neutral-800 bg-[#0f0f0f] py-2 pl-10 pr-4 text-sm text-white focus:border-red-600 focus:outline-none"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(event) => setSearchTerm(event.target.value)}
             />
           </div>
         </div>
@@ -137,11 +159,11 @@ export default function ProdutosPage() {
             "Categoria",
             "Marca",
             "Cor",
-            "Gênero",
+            "Genero",
             "Tamanho",
-            "Preço",
+            "Preco",
             "Estoque",
-            "Ações",
+            "Acoes",
           ]}
           isLoading={loading}
         >
@@ -155,13 +177,13 @@ export default function ProdutosPage() {
                   produto.categoria?.nome || produto.categoriaId?.toString(),
                 )}
               </TableCell>
-              <TableCell>{produto.marca || "—"}</TableCell>
-              <TableCell>{produto.cor || "—"}</TableCell>
-              <TableCell>{produto.genero || "—"}</TableCell>
-              <TableCell>{produto.tamanho || "—"}</TableCell>
+              <TableCell>{produto.marca || "-"}</TableCell>
+              <TableCell>{produto.cor || "-"}</TableCell>
+              <TableCell>{produto.genero || "-"}</TableCell>
+              <TableCell>{produto.tamanho || "-"}</TableCell>
               <TableCell className="text-white font-medium">
                 R${" "}
-                {produto.preco.toLocaleString("pt-BR", {
+                {Number(produto.preco).toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                 })}
               </TableCell>
@@ -217,6 +239,14 @@ export default function ProdutosPage() {
             </TableRow>
           )}
         </Table>
+
+        <div className="mt-4">
+          <Pagination
+            meta={pagination}
+            isLoading={loading}
+            onPageChange={setPage}
+          />
+        </div>
       </Card>
     </div>
   );

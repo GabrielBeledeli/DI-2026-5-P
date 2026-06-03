@@ -1,7 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { VendaStatus } from '@prisma/client';
+import { Prisma, VendaStatus } from '@prisma/client';
+import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { CriarVendaPayload } from './venda.interface';
+
+type VendasQuery = PaginationQuery & {
+  search?: string;
+  status?: string;
+  dataInicio?: string;
+  dataFim?: string;
+};
 
 const vendaInclude = {
   cliente: true,
@@ -37,6 +45,68 @@ export class VendasService {
       include: vendaInclude,
       orderBy: { id: 'desc' },
     });
+  }
+
+  async listarPaginado(query: VendasQuery) {
+    const pagination = parsePagination(query);
+    const where = this.buildWhere(query);
+    const [vendas, total] = await Promise.all([
+      this.prisma.venda.findMany({
+        where,
+        skip: pagination.skip,
+        take: pagination.limit,
+        include: vendaInclude,
+        orderBy: { id: 'desc' },
+      }),
+      this.prisma.venda.count({ where }),
+    ]);
+
+    return toPaginatedResponse(vendas, total, pagination);
+  }
+
+  private buildWhere(query: VendasQuery): Prisma.VendaWhereInput {
+    const where: Prisma.VendaWhereInput = {};
+    const status = query.status?.trim();
+    const search = query.search?.trim();
+    const dataInicio = query.dataInicio?.trim();
+    const dataFim = query.dataFim?.trim();
+
+    if (status && Object.values(VendaStatus).includes(status as VendaStatus)) {
+      where.status = status as VendaStatus;
+    }
+
+    if (dataInicio || dataFim) {
+      where.dataVenda = {};
+
+      if (dataInicio) {
+        where.dataVenda.gte = new Date(`${dataInicio}T00:00:00.000`);
+      }
+
+      if (dataFim) {
+        where.dataVenda.lte = new Date(`${dataFim}T23:59:59.999`);
+      }
+    }
+
+    if (search) {
+      const or: Prisma.VendaWhereInput[] = [
+        {
+          cliente: {
+            nome: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
+
+      if (/^\d+$/.test(search)) {
+        or.push({ id: BigInt(search) });
+      }
+
+      where.OR = or;
+    }
+
+    return where;
   }
 
   async buscarPorId(id: number) {

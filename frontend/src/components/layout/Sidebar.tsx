@@ -65,13 +65,17 @@ export default function Sidebar() {
               );
             }
 
-            const Icon = item.icon!;
+            if (!item.href || !item.icon) {
+              return null;
+            }
+
+            const Icon = item.icon;
             const isActive = pathname === item.href;
 
             return (
               <Link
                 key={item.href + index}
-                href={item.href!}
+                href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive 

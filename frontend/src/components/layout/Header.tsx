@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Bell, Search, User } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 
 export default function Header() {
   return (
@@ -18,13 +18,6 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="relative rounded-full p-2 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-red-600"></span>
-        </button>
-        
-        <div className="h-8 w-[1px] bg-neutral-800"></div>
-        
         <button className="flex items-center gap-2 rounded-lg p-1 text-neutral-400 hover:bg-[#1a1a1a] hover:text-white transition-colors">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800">
             <User size={18} />
