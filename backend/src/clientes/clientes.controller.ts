@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { hasPaginationQuery } from '../common/pagination';
+import type { PaginationQuery } from '../common/pagination';
 import type { Cliente, ClientePayload } from './cliente.interface';
 import { ClientesService } from './clientes.service';
 
@@ -7,7 +9,11 @@ export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
   @Get()
-  listar(): Promise<Cliente[]> {
+  listar(@Query() query: PaginationQuery) {
+    if (hasPaginationQuery(query)) {
+      return this.clientesService.listarPaginado(query);
+    }
+
     return this.clientesService.listar();
   }
 

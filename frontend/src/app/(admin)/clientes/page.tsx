@@ -1,89 +1,89 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { clienteService } from '@/services/clienteService';
-import { Cliente } from '@/types';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Table, { TableCell, TableRow } from '@/components/ui/Table';
-import { AppSwal as MySwal, showErrorAlert, showSuccessAlert } from '@/lib/alerts';
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { clienteService } from "@/services/clienteService";
+import { Cliente, PaginationMeta } from "@/types";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import Pagination from "@/components/ui/Pagination";
+import Table, { TableCell, TableRow } from "@/components/ui/Table";
+import {
+  AppSwal as MySwal,
+  showErrorAlert,
+  showSuccessAlert,
+} from "@/lib/alerts";
+
+const PAGE_SIZE = 50;
+const initialPagination: PaginationMeta = {
+  page: 1,
+  limit: PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
+};
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] =
+    useState<PaginationMeta>(initialPagination);
 
-  const fetchClientes = async () => {
+  const fetchClientes = async (pageToLoad = page) => {
     try {
       setLoading(true);
-      const data = await clienteService.listar();
-      setClientes(data);
+      const response = await clienteService.listarPaginado({
+        page: pageToLoad,
+        limit: PAGE_SIZE,
+      });
+      setClientes(response.data);
+      setPagination(response.meta);
     } catch (error) {
       console.error(error);
-      showErrorAlert(error, 'Não foi possível carregar os clientes.');
+      showErrorAlert(error, "Nao foi possivel carregar os clientes.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    let isActive = true;
-
-    clienteService
-      .listar()
-      .then((data) => {
-        if (isActive) {
-          setClientes(data);
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-        showErrorAlert(error, 'Não foi possível carregar os clientes.');
-      })
-      .finally(() => {
-        if (isActive) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
+    fetchClientes(page);
+  }, [page]);
 
   const filteredClientes = useMemo(() => {
     const normalizedSearch = searchTerm.toLowerCase();
 
-    return clientes.filter((cliente) =>
-      cliente.nome.toLowerCase().includes(normalizedSearch) ||
-      cliente.email.toLowerCase().includes(normalizedSearch) ||
-      cliente.cidade.toLowerCase().includes(normalizedSearch)
+    return clientes.filter(
+      (cliente) =>
+        cliente.nome.toLowerCase().includes(normalizedSearch) ||
+        cliente.email.toLowerCase().includes(normalizedSearch) ||
+        cliente.cidade.toLowerCase().includes(normalizedSearch),
     );
   }, [clientes, searchTerm]);
 
   const handleDelete = async (id: number, nome: string) => {
     const result = await MySwal.fire({
-      title: 'Tem certeza?',
+      title: "Tem certeza?",
       text: `Deseja realmente excluir o cliente ${nome}?`,
-      icon: 'warning',
+      icon: "warning",
       showCancelButton: true,
-      confirmButtonText: 'Sim, excluir!',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc2626',
-      background: '#1a1a1a',
-      color: '#fff',
+      confirmButtonText: "Sim, excluir!",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#dc2626",
+      background: "#1a1a1a",
+      color: "#fff",
     });
 
     if (result.isConfirmed) {
       try {
         await clienteService.deletar(id);
-        showSuccessAlert('Sucesso', 'Cliente excluído com sucesso.');
-        await fetchClientes();
+        showSuccessAlert("Sucesso", "Cliente excluido com sucesso.");
+        await fetchClientes(page);
       } catch (error) {
-        showErrorAlert(error, 'Não foi possível excluir o cliente.');
+        showErrorAlert(error, "Nao foi possivel excluir o cliente.");
       }
     }
   };
@@ -92,8 +92,12 @@ export default function ClientesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Clientes</h1>
-          <p className="text-neutral-500">Gerencie sua base de clientes corporativos.</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">
+            Clientes
+          </h1>
+          <p className="text-neutral-500">
+            Gerencie sua base de clientes corporativos.
+          </p>
         </div>
         <Link href="/clientes/novo">
           <Button leftIcon={<Plus size={18} />}>Novo Cliente</Button>
@@ -103,7 +107,10 @@ export default function ClientesPage() {
       <Card>
         <div className="mb-6 flex items-center gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+              size={18}
+            />
             <input
               type="text"
               placeholder="Buscar por nome, e-mail ou cidade..."
@@ -114,10 +121,15 @@ export default function ClientesPage() {
           </div>
         </div>
 
-        <Table headers={['Nome', 'E-mail', 'Cidade', 'País', 'Ações']} isLoading={loading}>
+        <Table
+          headers={["Nome", "E-mail", "Cidade", "Pais", "Acoes"]}
+          isLoading={loading}
+        >
           {filteredClientes.map((cliente) => (
             <TableRow key={cliente.id}>
-              <TableCell className="font-medium text-white">{cliente.nome}</TableCell>
+              <TableCell className="font-medium text-white">
+                {cliente.nome}
+              </TableCell>
               <TableCell>{cliente.email}</TableCell>
               <TableCell>
                 {cliente.cidade} / {cliente.estado}
@@ -128,7 +140,11 @@ export default function ClientesPage() {
               <TableCell>
                 <div className="flex gap-2">
                   <Link href={`/clientes/${cliente.id}/editar`}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400 hover:text-blue-300">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-blue-400 hover:text-blue-300"
+                    >
                       <Pencil size={16} />
                     </Button>
                   </Link>
@@ -146,12 +162,23 @@ export default function ClientesPage() {
           ))}
           {!loading && filteredClientes.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="py-10 text-center text-neutral-500">
+              <TableCell
+                colSpan={5}
+                className="py-10 text-center text-neutral-500"
+              >
                 Nenhum cliente encontrado.
               </TableCell>
             </TableRow>
           )}
         </Table>
+
+        <div className="mt-4">
+          <Pagination
+            meta={pagination}
+            isLoading={loading}
+            onPageChange={setPage}
+          />
+        </div>
       </Card>
     </div>
   );

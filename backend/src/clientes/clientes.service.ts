@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cliente, ClientePayload } from './cliente.interface';
 
@@ -20,6 +21,20 @@ export class ClientesService {
         id: 'asc',
       },
     });
+  }
+
+  async listarPaginado(query: PaginationQuery) {
+    const pagination = parsePagination(query);
+    const [clientes, total] = await Promise.all([
+      this.prisma.cliente.findMany({
+        skip: pagination.skip,
+        take: pagination.limit,
+        orderBy: { id: 'asc' },
+      }),
+      this.prisma.cliente.count(),
+    ]);
+
+    return toPaginatedResponse(clientes, total, pagination);
   }
 
   async buscarPorId(id: number): Promise<Cliente> {

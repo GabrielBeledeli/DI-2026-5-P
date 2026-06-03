@@ -41,8 +41,21 @@ export interface Venda {
   id: number;
   clienteId: number;
   total: number;
-  status: "ATIVO" | "CANCELADO";
-  data: string;
+  status: "CONCLUIDA" | "CANCELADO" | "PENDENTE_PAGAMENTO" | "ATIVO";
+  data?: string;
+  dataVenda?: string;
   cliente?: Cliente;
   itens?: VendaItem[];
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
 }

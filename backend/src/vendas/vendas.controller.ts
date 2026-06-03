@@ -1,13 +1,26 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { hasPaginationQuery } from '../common/pagination';
+import type { PaginationQuery } from '../common/pagination';
 import { CriarVendaPayload } from './venda.interface';
 import { VendasService } from './vendas.service';
+
+type VendasQuery = PaginationQuery & {
+  search?: string;
+  status?: string;
+  dataInicio?: string;
+  dataFim?: string;
+};
 
 @Controller('vendas')
 export class VendasController {
   constructor(private readonly vendasService: VendasService) {}
 
   @Get()
-  listar() {
+  listar(@Query() query: VendasQuery) {
+    if (hasPaginationQuery(query)) {
+      return this.vendasService.listarPaginado(query);
+    }
+
     return this.vendasService.listar();
   }
 

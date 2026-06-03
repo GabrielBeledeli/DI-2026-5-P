@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProdutoPayload } from './produto.interface';
 
@@ -56,6 +57,21 @@ export class ProdutosService {
       include: { categoria: true },
       orderBy: { id: 'asc' },
     });
+  }
+
+  async listarPaginado(query: PaginationQuery) {
+    const pagination = parsePagination(query);
+    const [produtos, total] = await Promise.all([
+      this.prisma.produto.findMany({
+        skip: pagination.skip,
+        take: pagination.limit,
+        include: { categoria: true },
+        orderBy: { id: 'asc' },
+      }),
+      this.prisma.produto.count(),
+    ]);
+
+    return toPaginatedResponse(produtos, total, pagination);
   }
 
   async buscarPorId(id: number) {
