@@ -4,10 +4,12 @@ import type { PaginationQuery } from '../common/pagination';
 import { CreateVendaDto } from './dto/create-venda.dto';
 import { UpdateVendaDto } from './dto/update-venda.dto';
 import { VendasService } from './vendas.service';
+import { CurrentUser } from '../auth/user.decorator';
 
 type VendasQuery = PaginationQuery & {
   search?: string;
   status?: string;
+  usuarioId?: string;
   dataInicio?: string;
   dataFim?: string;
 };
@@ -31,8 +33,8 @@ export class VendasController {
   }
 
   @Post()
-  criar(@Body() payload: CreateVendaDto) {
-    return this.vendasService.criar(payload);
+  criar(@Body() payload: CreateVendaDto, @CurrentUser() user: any) {
+    return this.vendasService.criar(payload, Number(user.userId));
   }
 
   @Patch(':id')

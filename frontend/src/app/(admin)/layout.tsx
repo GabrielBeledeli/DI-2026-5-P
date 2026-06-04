@@ -1,6 +1,5 @@
 import React from 'react';
 import Sidebar from "@/components/layout/Sidebar";
-import Header from "@/components/layout/Header";
 
 export default function AdminLayout({
   children,
@@ -11,8 +10,7 @@ export default function AdminLayout({
     <>
       <Sidebar />
       <div className="pl-64">
-        <Header />
-        <main className="min-h-screen pt-16 px-8 pb-12">
+        <main className="min-h-screen px-8 py-10">
           {children}
         </main>
       </div>

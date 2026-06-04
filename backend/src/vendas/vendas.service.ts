@@ -8,12 +8,21 @@ import { UpdateVendaDto } from './dto/update-venda.dto';
 type VendasQuery = PaginationQuery & {
   search?: string;
   status?: string;
+  usuarioId?: string;
   dataInicio?: string;
   dataFim?: string;
 };
 
 const vendaInclude = {
   cliente: true,
+  usuario: {
+    select: {
+      id: true,
+      nome: true,
+      email: true,
+      perfil: true,
+    },
+  },
   itens: {
     include: {
       produto: {
@@ -68,12 +77,17 @@ export class VendasService {
   private buildWhere(query: VendasQuery): Prisma.VendaWhereInput {
     const where: Prisma.VendaWhereInput = {};
     const status = query.status?.trim();
+    const usuarioId = query.usuarioId?.trim();
     const search = query.search?.trim();
     const dataInicio = query.dataInicio?.trim();
     const dataFim = query.dataFim?.trim();
 
     if (status && Object.values(VendaStatus).includes(status as VendaStatus)) {
       where.status = status as VendaStatus;
+    }
+
+    if (usuarioId && /^\d+$/.test(usuarioId)) {
+      where.usuarioId = BigInt(usuarioId);
     }
 
     if (dataInicio || dataFim) {
@@ -123,13 +137,14 @@ export class VendasService {
     return venda;
   }
 
-  async criar(payload: CreateVendaDto) {
+  async criar(payload: CreateVendaDto, usuarioId: number) {
     const dados = await this.validarPayload(payload);
 
     return this.prisma.$transaction(async (tx) => {
       const venda = await tx.venda.create({
         data: {
           clienteId: BigInt(dados.clienteId),
+          usuarioId: BigInt(usuarioId),
           total: dados.total,
           status: payload.status,
           itens: {

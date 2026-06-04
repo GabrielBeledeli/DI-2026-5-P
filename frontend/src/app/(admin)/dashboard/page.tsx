@@ -8,7 +8,9 @@ import {
   ShoppingCart, 
   AlertTriangle,
   DollarSign,
-  Plus
+  Plus,
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -22,13 +24,12 @@ import {
   PointElement,
   LineElement,
 } from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
+import { Bar, Pie, Line } from 'react-chartjs-2';
 import Card from '@/components/ui/Card';
 import Table, { TableRow, TableCell } from '@/components/ui/Table';
-import { vendaService } from '@/services/vendaService';
-import { clienteService } from '@/services/clienteService';
-import { produtoService } from '@/services/produtoService';
-import { Venda, Cliente, Produto } from '@/types';
+import Button from '@/components/ui/Button';
+import { dashboardService, DashboardStats } from '@/services/dashboardService';
+import { usuarioService, Vendedor } from '@/services/usuarioService';
 
 ChartJS.register(
   CategoryScale,
@@ -43,85 +44,86 @@ ChartJS.register(
 );
 
 export default function DashboardPage() {
-  const [vendas, setVendas] = useState<Venda[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Filtros
+  const [showFilters, setShowFilters] = useState(false);
+  const [vendedorFilter, setVendedorFilter] = useState("");
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const data = await dashboardService.getStats({
+        usuarioId: vendedorFilter || undefined,
+        dataInicio: dataInicio || undefined,
+        dataFim: dataFim || undefined
+      });
+      setStats(data);
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
+    fetchStats();
+  }, [vendedorFilter, dataInicio, dataFim]);
+
+  useEffect(() => {
+    const fetchVendedores = async () => {
       try {
-        const [vendasData, clientesData, produtosData] = await Promise.all([
-          vendaService.listar(),
-          clienteService.listar(),
-          produtoService.listar()
-        ]);
-        setVendas(vendasData || []);
-        setClientes(clientesData || []);
-        setProdutos(produtosData || []);
+        const data = await usuarioService.listarVendedores();
+        setVendedores(data);
       } catch (error) {
-        console.error('Erro ao carregar dados do dashboard:', error);
+        console.error("Erro ao carregar vendedores:", error);
       }
     };
-    fetchData();
+    fetchVendedores();
   }, []);
 
-  const totalVendas = vendas.length;
-  const totalClientes = clientes.length;
-  const estoqueBaixo = produtos.filter(p => p.estoque < 5).length;
-  const faturamentoTotal = vendas.reduce((acc, venda) => {
-    if (venda.status === 'CANCELADO') return acc;
+  const clearFilters = () => {
+    setVendedorFilter("");
+    setDataInicio("");
+    setDataFim("");
+  };
 
-    return acc + Number(venda.total || 0);
-  }, 0);
-  const topClientes = clientes
-    .map((cliente) => {
-      const vendasCliente = vendas.filter(
-        (venda) =>
-          String(venda.clienteId) === String(cliente.id) &&
-          venda.status !== 'CANCELADO',
-      );
-      const totalGasto = vendasCliente.reduce(
-        (acc, venda) => acc + Number(venda.total || 0),
-        0,
-      );
+  if (!stats && loading) {
+    return <div className="flex items-center justify-center h-screen text-white">Carregando Dashboard...</div>;
+  }
 
-      return {
-        cliente,
-        totalVendas: vendasCliente.length,
-        totalGasto,
-      };
-    })
-    .filter((item) => item.totalVendas > 0)
-    .sort((a, b) => b.totalGasto - a.totalGasto)
-    .slice(0, 5);
-
-  // Dados fictícios para os gráficos baseados nos dados reais (ou mockados se vazio)
-  const barData = {
-    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+  const lineData = {
+    labels: stats?.vendasMensais.map(v => v.mes) || [],
     datasets: [
       {
-        label: 'Vendas (R$)',
-        data: [12000, 19000, 15000, 25000, 22000, 30000],
-        backgroundColor: '#dc2626',
-        borderRadius: 4,
+        fill: true,
+        label: 'Faturamento (R$)',
+        data: stats?.vendasMensais.map(v => v.total) || [],
+        borderColor: '#dc2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+        tension: 0.4,
+        pointBackgroundColor: '#dc2626',
+        pointBorderColor: '#0f0f0f',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       },
     ],
   };
 
-  const pieData = {
-    labels: ['Casual', 'Running', 'Social', 'Outdoor', 'Kids'],
+  const categoryBarData = {
+    labels: stats?.vendasCategoria.map(v => v.categoria) || [],
     datasets: [
       {
-        data: [45, 25, 15, 10, 5],
-        backgroundColor: [
-          '#dc2626',
-          '#1a1a1a',
-          '#2a2a2a',
-          '#4a4a4a',
-          '#6a6a6a',
-        ],
-        borderWidth: 1,
-        borderColor: '#0f0f0f',
+        label: 'Faturamento por Categoria (R$)',
+        data: stats?.vendasCategoria.map(v => v.faturamento) || [],
+        backgroundColor: '#dc2626',
+        borderRadius: 4,
+        barThickness: 20,
       },
     ],
   };
@@ -133,13 +135,43 @@ export default function DashboardPage() {
       legend: {
         display: false,
       },
+      tooltip: {
+        backgroundColor: '#1a1a1a',
+        titleColor: '#fff',
+        bodyColor: '#a3a3a3',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+      }
     },
     scales: {
       y: {
-        grid: { color: '#2a2a2a' },
-        ticks: { color: '#a3a3a3' }
+        grid: { color: '#2a2a2a', drawBorder: false },
+        ticks: { 
+          color: '#737373',
+          callback: (value: any) => `R$ ${value >= 1000 ? (value/1000) + 'k' : value}`
+        }
       },
       x: {
+        grid: { display: false },
+        ticks: { color: '#737373' }
+      }
+    }
+  };
+
+  const categoryChartOptions = {
+    ...chartOptions,
+    indexAxis: 'y' as const,
+    scales: {
+      x: {
+        grid: { color: '#2a2a2a', drawBorder: false },
+        ticks: { 
+          color: '#737373',
+          callback: (value: any) => `R$ ${value >= 1000 ? (value/1000) + 'k' : value}`
+        }
+      },
+      y: {
         grid: { display: false },
         ticks: { color: '#a3a3a3' }
       }
@@ -148,68 +180,127 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
-        <p className="text-neutral-500">Bem-vindo de volta! Aqui está o resumo das operações.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard Analítico</h1>
+          <p className="text-neutral-500">Dados consolidados do BI (atualizados a cada 5 min).</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showFilters ? "secondary" : "outline"}
+            size="sm"
+            leftIcon={<Filter size={16} />}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            Filtros
+          </Button>
+        </div>
       </div>
+
+      {showFilters && (
+        <Card className="border-red-600/20 bg-red-600/5">
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+            <label className="flex flex-col gap-1.5 text-sm text-neutral-400">
+              Vendedor
+              <select
+                className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                value={vendedorFilter}
+                onChange={(e) => setVendedorFilter(e.target.value)}
+              >
+                <option value="">Todos</option>
+                {vendedores.map((v) => (
+                  <option key={v.id.toString()} value={v.id.toString()}>
+                    {v.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-sm text-neutral-400">
+              Data inicial
+              <input
+                type="date"
+                className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-sm text-neutral-400">
+              Data final
+              <input
+                type="date"
+                className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                value={dataFim}
+                onChange={(e) => setDataFim(e.target.value)}
+              />
+            </label>
+
+            <Button type="button" variant="ghost" onClick={clearFilters}>
+              Limpar
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard 
-          title="Total de Vendas" 
-          value={totalVendas.toString()} 
+          title="Vendas (Concluídas)" 
+          value={stats?.resumo.totalVendas.toString() || "0"} 
           icon={<ShoppingCart className="text-red-500" />} 
-          trend="+12%" 
-        />
-        <SummaryCard 
-          title="Total de Clientes" 
-          value={totalClientes.toString()} 
-          icon={<Users className="text-blue-500" />} 
-          trend="+5%" 
+          subtitle="No período selecionado"
         />
         <SummaryCard 
           title="Faturamento" 
-          value={`R$ ${faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} 
+          value={`R$ ${stats?.resumo.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0 }) || "0"}`} 
           icon={<DollarSign className="text-green-500" />} 
-          trend="+18%" 
+          subtitle="Soma das vendas concluídas"
         />
         <SummaryCard 
-          title="Estoque Baixo" 
-          value={estoqueBaixo.toString()} 
-          icon={<AlertTriangle className="text-orange-500" />} 
-          trend={estoqueBaixo > 0 ? "Atenção" : "Normal"}
-          trendColor={estoqueBaixo > 0 ? "text-orange-500" : "text-green-500"}
+          title="Clientes Ativos" 
+          value={stats?.resumo.totalClientes.toString() || "0"} 
+          icon={<Users className="text-blue-500" />} 
+          subtitle="Base total no período"
+        />
+        <SummaryCard 
+          title="Ticket Médio" 
+          value={`R$ ${stats?.resumo.ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || "0"}`} 
+          icon={<RefreshCw className="text-purple-500" />} 
+          subtitle="Eficiência por venda"
+          trendColor="text-purple-500"
         />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card title="Vendas Mensais" className="lg:col-span-2">
+        <Card title="Evolução de Faturamento" className="lg:col-span-2">
           <div className="h-80">
-            <Bar data={barData} options={chartOptions} />
+            <Line data={lineData} options={chartOptions} />
           </div>
         </Card>
-        <Card title="Vendas por Categoria">
+        <Card title="Faturamento por Categoria">
           <div className="h-80">
-            <Pie data={pieData} options={{ maintainAspectRatio: false }} />
+            <Bar data={categoryBarData} options={categoryChartOptions} />
           </div>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card title="Top 5 Clientes" className="lg:col-span-2">
-          <Table headers={['Cliente', 'Vendas', 'Total Gasto']}>
-            {topClientes.map(({ cliente, totalVendas, totalGasto }) => (
-              <TableRow key={cliente.id}>
-                <TableCell className="font-medium text-white">{cliente.nome}</TableCell>
-                <TableCell>{totalVendas}</TableCell>
+        <Card title="Ranking: Top 5 Clientes" className="lg:col-span-2">
+          <Table headers={['Cliente', 'Qtd. Vendas', 'Total Investido']}>
+            {stats?.topClientes.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell className="font-medium text-white">{item.nome}</TableCell>
+                <TableCell>{item.vendas}</TableCell>
                 <TableCell className="text-red-500 font-bold">
-                  R$ {totalGasto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {item.totalGasto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </TableCell>
               </TableRow>
             ))}
-            {topClientes.length === 0 && (
+            {(!stats || stats.topClientes.length === 0) && (
               <TableRow>
                 <TableCell colSpan={3} className="py-10 text-center text-neutral-500">
-                  Nenhuma venda realizada.
+                  Sem dados para o filtro selecionado.
                 </TableCell>
               </TableRow>
             )}
@@ -247,18 +338,18 @@ type SummaryCardProps = {
   title: string;
   value: string;
   icon: React.ReactNode;
-  trend: string;
+  subtitle: string;
   trendColor?: string;
 };
 
-function SummaryCard({ title, value, icon, trend, trendColor = "text-green-500" }: SummaryCardProps) {
+function SummaryCard({ title, value, icon, subtitle, trendColor = "text-neutral-500" }: SummaryCardProps) {
   return (
     <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div className="rounded-lg bg-[#0f0f0f] p-2">
           {icon}
         </div>
-        <span className={`text-xs font-medium ${trendColor}`}>{trend}</span>
+        <span className={`text-[10px] font-bold uppercase tracking-wider ${trendColor}`}>{subtitle}</span>
       </div>
       <h3 className="text-sm font-medium text-neutral-500">{title}</h3>
       <p className="text-2xl font-bold text-white mt-1">{value}</p>

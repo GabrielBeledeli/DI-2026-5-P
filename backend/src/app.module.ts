@@ -8,6 +8,8 @@ import { ClientesModule } from './clientes/clientes.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProdutosModule } from './produtos/produtos.module';
 import { VendasModule } from './vendas/vendas.module';
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
@@ -18,6 +20,8 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     CategoriasModule,
     ProdutosModule,
     VendasModule,
+    UsuariosModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
