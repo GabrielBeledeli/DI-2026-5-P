@@ -55,6 +55,11 @@ export const vendaService = {
     return response.data;
   },
 
+  atualizar: async (id: number, dados: Partial<CriarVendaData> & { status?: string }) => {
+    const response = await api.patch<Venda>(`/vendas/${id}`, dados);
+    return response.data;
+  },
+
   deletar: async (id: number) => {
     await api.delete(`/vendas/${id}`);
   },

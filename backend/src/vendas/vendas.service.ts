@@ -2,7 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma, VendaStatus } from '@prisma/client';
 import { PaginationQuery, parsePagination, toPaginatedResponse } from '../common/pagination';
 import { PrismaService } from '../prisma/prisma.service';
-import { CriarVendaPayload } from './venda.interface';
+import { CreateVendaDto } from './dto/create-venda.dto';
+import { UpdateVendaDto } from './dto/update-venda.dto';
 
 type VendasQuery = PaginationQuery & {
   search?: string;
@@ -111,7 +112,7 @@ export class VendasService {
 
   async buscarPorId(id: number) {
     const venda = await this.prisma.venda.findUnique({
-      where: { id },
+      where: { id: BigInt(id) },
       include: vendaInclude,
     });
 
@@ -122,17 +123,18 @@ export class VendasService {
     return venda;
   }
 
-  async criar(payload: Partial<CriarVendaPayload>) {
+  async criar(payload: CreateVendaDto) {
     const dados = await this.validarPayload(payload);
 
     return this.prisma.$transaction(async (tx) => {
       const venda = await tx.venda.create({
         data: {
-          clienteId: dados.clienteId,
+          clienteId: BigInt(dados.clienteId),
           total: dados.total,
+          status: payload.status,
           itens: {
             create: dados.itens.map((item) => ({
-              produtoId: item.produtoId,
+              produtoId: BigInt(item.produtoId),
               quantidade: item.quantidade,
               precoUnitario: item.precoUnitario,
               subtotal: item.subtotal,
@@ -142,50 +144,89 @@ export class VendasService {
         include: vendaInclude,
       });
 
-      await Promise.all(
-        dados.itens.map((item) =>
-          tx.produto.update({
-            where: { id: item.produtoId },
-            data: { estoque: { decrement: item.quantidade } },
-          }),
-        ),
-      );
+      for (const item of dados.itens) {
+        await tx.produto.update({
+          where: { id: BigInt(item.produtoId) },
+          data: { estoque: { decrement: item.quantidade } },
+        });
+      }
 
       return venda;
     });
   }
 
-  async cancelar(id: number) {
-    const venda = await this.buscarPorId(id);
+  async atualizar(id: number, payload: UpdateVendaDto) {
+    const vId = BigInt(id);
+    
+    // 1. Busca a venda original de forma isolada para garantir que existe e estornar estoque
+    const vendaOriginal = await this.prisma.venda.findUnique({
+      where: { id: vId },
+      include: { itens: true }
+    });
 
-    if (venda.status === VendaStatus.CANCELADO) {
-      return venda;
+    if (!vendaOriginal) throw new NotFoundException('Venda nao encontrada.');
+
+    // 2. Trava de seguranca
+    if (vendaOriginal.status === VendaStatus.CONCLUIDA || vendaOriginal.status === VendaStatus.CANCELADO) {
+      throw new BadRequestException('Esta venda ja esta finalizada ou cancelada e nao permite alteracoes.');
     }
 
     return this.prisma.$transaction(async (tx) => {
-      await Promise.all(
-        venda.itens.map((item) =>
-          tx.produto.update({
-            where: { id: item.produtoId },
-            data: { estoque: { increment: item.quantidade } },
-          }),
-        ),
-      );
+      // 3. ESTORNO DE ESTOQUE (Devolve itens antigos)
+      for (const item of vendaOriginal.itens) {
+        await tx.produto.update({
+          where: { id: item.produtoId },
+          data: { estoque: { increment: item.quantidade } }
+        });
+      }
 
-      return tx.venda.update({
-        where: { id },
-        data: { status: VendaStatus.CANCELADO },
+      // 4. VALIDAÇÃO E CÁLCULO (Usando os dados originais como fallback para PATCH parcial)
+      const dadosParaValidar = {
+        clienteId: payload.clienteId ?? Number(vendaOriginal.clienteId),
+        itens: payload.itens ?? vendaOriginal.itens.map(i => ({
+          produtoId: Number(i.produtoId),
+          quantidade: i.quantidade,
+          precoUnitario: i.precoUnitario
+        })),
+        status: payload.status ?? vendaOriginal.status
+      };
+
+      const dados = await this.validarPayloadInterno(dadosParaValidar as any, tx);
+
+      // 5. ATUALIZAÇÃO ATÔMICA (DELETA ITENS, CRIA NOVOS E ATUALIZA CABEÇA)
+      const vendaAtualizada = await tx.venda.update({
+        where: { id: vId },
+        data: {
+          clienteId: BigInt(dados.clienteId),
+          total: dados.total,
+          status: dadosParaValidar.status as VendaStatus,
+          itens: {
+            deleteMany: {}, // Limpa todos os itens vinculados a esta venda
+            create: dados.itens.map((item) => ({
+              produtoId: BigInt(item.produtoId),
+              quantidade: item.quantidade,
+              precoUnitario: item.precoUnitario,
+              subtotal: item.subtotal,
+            })),
+          },
+        },
         include: vendaInclude,
       });
+
+      // 6. DEDUÇÃO DO NOVO ESTOQUE
+      for (const item of dados.itens) {
+        await tx.produto.update({
+          where: { id: BigInt(item.produtoId) },
+          data: { estoque: { decrement: item.quantidade } }
+        });
+      }
+
+      return vendaAtualizada;
     });
   }
 
-  async deletar(id: number) {
-    await this.buscarPorId(id);
-    await this.prisma.venda.delete({ where: { id } });
-  }
-
-  private async validarPayload(payload: Partial<CriarVendaPayload>) {
+  // Refatoracao para aceitar um client do Prisma (transacional ou nao) e lidar com BigInt
+  private async validarPayloadInterno(payload: any, prisma: Prisma.TransactionClient | PrismaService) {
     const clienteId = Number(payload.clienteId);
     const itensPayload = payload.itens ?? [];
 
@@ -193,13 +234,13 @@ export class VendasService {
       throw new BadRequestException('Cliente invalido.');
     }
 
-    const cliente = await this.prisma.cliente.findUnique({ where: { id: clienteId } });
+    const cliente = await prisma.cliente.findUnique({ where: { id: BigInt(clienteId) } });
     if (!cliente) {
-      throw new BadRequestException('Cliente invalido.');
+      throw new BadRequestException('Cliente nao encontrado.');
     }
 
     if (!Array.isArray(itensPayload) || itensPayload.length === 0) {
-      throw new BadRequestException('Adicione pelo menos um item.');
+      throw new BadRequestException('Adicione pelo menos um item a venda.');
     }
 
     const itens = await Promise.all(
@@ -215,17 +256,13 @@ export class VendasService {
           throw new BadRequestException('Quantidade invalida.');
         }
 
-        const produto = await this.prisma.produto.findUnique({ where: { id: produtoId } });
+        const produto = await prisma.produto.findUnique({ where: { id: BigInt(produtoId) } });
         if (!produto) {
-          throw new BadRequestException('Produto invalido.');
-        }
-
-        if (produto.estoque <= 0) {
-          throw new BadRequestException(`${produto.nome} esta sem estoque.`);
+          throw new BadRequestException('Produto nao encontrado.');
         }
 
         if (produto.estoque < quantidade) {
-          throw new BadRequestException(`Estoque insuficiente para ${produto.nome}.`);
+          throw new BadRequestException(`Estoque insuficiente para ${produto.nome}. Disponivel: ${produto.estoque}`);
         }
 
         const precoPayload = parseMoney(item.precoUnitario);
@@ -238,5 +275,39 @@ export class VendasService {
 
     const total = itens.reduce((acc, item) => acc + item.subtotal, 0);
     return { clienteId, itens, total };
+  }
+
+  private async validarPayload(payload: CreateVendaDto) {
+    return this.validarPayloadInterno(payload, this.prisma);
+  }
+
+  async cancelar(id: number) {
+    const vId = BigInt(id);
+    const venda = await this.buscarPorId(id);
+
+    if (venda.status === VendaStatus.CANCELADO) {
+      return venda;
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      for (const item of venda.itens) {
+        await tx.produto.update({
+          where: { id: item.produtoId },
+          data: { estoque: { increment: item.quantidade } },
+        });
+      }
+
+      return tx.venda.update({
+        where: { id: vId },
+        data: { status: VendaStatus.CANCELADO },
+        include: vendaInclude,
+      });
+    });
+  }
+
+  async deletar(id: number) {
+    const vId = BigInt(id);
+    await this.buscarPorId(id);
+    await this.prisma.venda.delete({ where: { id: vId } });
   }
 }

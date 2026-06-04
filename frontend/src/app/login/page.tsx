@@ -1,14 +1,23 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Footprints, Lock, Mail } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { AppSwal as MySwal } from '@/lib/alerts';
 import api from '@/services/api';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +34,10 @@ export default function LoginPage() {
       });
 
       localStorage.setItem('kickhub_usuario', JSON.stringify(data.usuario));
-      router.push('/dashboard');
+      
+      // Redireciona para a URL de origem ou dashboard
+      const callbackUrl = searchParams.get('callbackUrl') || '/vendas';
+      router.push(callbackUrl);
     } catch {
       MySwal.fire({
         title: 'Erro de Acesso',

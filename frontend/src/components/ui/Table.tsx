@@ -1,8 +1,13 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
+interface HeaderObject {
+  label: string;
+  align?: 'left' | 'center' | 'right';
+}
+
 interface TableProps {
-  headers: string[];
+  headers: (string | HeaderObject)[];
   children: React.ReactNode;
   className?: string;
   isLoading?: boolean;
@@ -14,11 +19,23 @@ export default function Table({ headers, children, className, isLoading }: Table
       <table className={cn("w-full text-left text-sm text-neutral-400", className)}>
         <thead className="bg-[#0f0f0f] text-xs font-semibold uppercase text-neutral-500">
           <tr>
-            {headers.map((header, index) => (
-              <th key={index} className="px-6 py-4">
-                {header}
-              </th>
-            ))}
+            {headers.map((header, index) => {
+              const label = typeof header === 'string' ? header : header.label;
+              const align = typeof header === 'string' ? 'left' : (header.align || 'left');
+              
+              return (
+                <th 
+                  key={index} 
+                  className={cn(
+                    "px-6 py-4",
+                    align === 'center' && "text-center",
+                    align === 'right' && "text-right"
+                  )}
+                >
+                  {label}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody className="divide-y divide-neutral-800 bg-[#1a1a1a]">
@@ -41,9 +58,9 @@ export default function Table({ headers, children, className, isLoading }: Table
   );
 }
 
-export function TableRow({ children, className }: { children: React.ReactNode, className?: string }) {
+export function TableRow({ children, className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className={cn("transition-colors hover:bg-neutral-800/50", className)}>
+    <tr className={cn("transition-colors hover:bg-neutral-800/50", className)} {...props}>
       {children}
     </tr>
   );

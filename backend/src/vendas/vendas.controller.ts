@@ -1,7 +1,8 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { hasPaginationQuery } from '../common/pagination';
 import type { PaginationQuery } from '../common/pagination';
-import { CriarVendaPayload } from './venda.interface';
+import { CreateVendaDto } from './dto/create-venda.dto';
+import { UpdateVendaDto } from './dto/update-venda.dto';
 import { VendasService } from './vendas.service';
 
 type VendasQuery = PaginationQuery & {
@@ -30,8 +31,13 @@ export class VendasController {
   }
 
   @Post()
-  criar(@Body() payload: Partial<CriarVendaPayload>) {
+  criar(@Body() payload: CreateVendaDto) {
     return this.vendasService.criar(payload);
+  }
+
+  @Patch(':id')
+  atualizar(@Param('id', ParseIntPipe) id: number, @Body() payload: UpdateVendaDto) {
+    return this.vendasService.atualizar(id, payload);
   }
 
   @Patch(':id/cancelar')

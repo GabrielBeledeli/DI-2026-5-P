@@ -37,7 +37,18 @@ export default function NovaVendaPage() {
   const handleSubmit = async (data: any) => {
     try {
       setLoading(true);
-      await vendaService.criar(data);
+      
+      // Limpeza dos dados: remove campos extras que o backend não aceita
+      const cleanData = {
+        ...data,
+        itens: data.itens.map((item: any) => ({
+          produtoId: item.produtoId,
+          quantidade: item.quantidade,
+          precoUnitario: item.precoUnitario
+        }))
+      };
+
+      await vendaService.criar(cleanData);
       await showSuccessAlert('Venda Realizada!', 'O pedido foi processado com sucesso.');
       router.push('/vendas');
     } catch (error) {
@@ -61,6 +72,7 @@ export default function NovaVendaPage() {
         produtos={produtos} 
         onSubmit={handleSubmit} 
         isLoading={loading} 
+        submitLabel="Registrar Venda"
       />
     </div>
   );

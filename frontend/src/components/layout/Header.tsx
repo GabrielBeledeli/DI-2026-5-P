@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { LogOut, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import api from '@/services/api';
 
 type UsuarioLogado = {
   nome: string;
@@ -36,9 +37,15 @@ export default function Header() {
       .toUpperCase();
   }, [usuario]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('kickhub_usuario');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Erro ao fazer logout no servidor', error);
+    } finally {
+      localStorage.removeItem('kickhub_usuario');
+      router.push('/login');
+    }
   };
 
   return (

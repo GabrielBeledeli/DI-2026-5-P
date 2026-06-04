@@ -36,8 +36,8 @@ GENEROS = ['masculino', 'feminino', 'unisex']
 TAMANHOS = ['34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44']
 CATEGORIAS = ['Casual', 'Running', 'Social', 'Outdoor', 'Kids']
 STATUS = ['CONCLUIDA', 'CANCELADO', 'PENDENTE_PAGAMENTO']
-SENHA_ADMIN_HASH = '$2b$10$3VfHg5jJV5iZBJcRDNMur.V3yrvlO01Xzs4TkuG0wfUj3ezhD43Wi'
-SENHA_VENDEDOR_HASH = '$2b$10$K0fHdpZbGIC/YVEqy3iEwuEu0TtB5uuyZ6RTyPxGF0upZvJY35.Q2'
+SENHA_ADMIN_HASH = '$2b$10$U6t5GfmXzxK78KeBxXgfBO04ikdiN/VBPHZnZZnGisf6AvYDiiQQW'
+SENHA_VENDEDOR_HASH = '$2b$10$AvM.0TukIPjxEI999xOK6u1YtWREgfUvwqEoZGCtYgfZ4sgCB.UX6'
 
 print("Iniciando seeder...")
 
@@ -51,19 +51,43 @@ conn.commit()
 # 2. Usuarios
 print("  → usuarios...")
 cur.execute("TRUNCATE usuarios CASCADE")
-for i in range(10):
-    nome = 'Administrador KickHub' if i == 0 else fake.name()
-    email = 'admin@kickhub.com' if i == 0 else fake.unique.email()
-    senha = SENHA_ADMIN_HASH if i == 0 else SENHA_VENDEDOR_HASH
 
+USUARIOS_SISTEMA = [
+    {
+        'nome': 'Gabriel Beledeli Hul',
+        'email': 'gabriel@kickhub.com',
+        'senha': SENHA_ADMIN_HASH, # gestor123
+        'perfil': 'GESTOR'
+    },
+    {
+        'nome': 'Nicolas Miguel',
+        'email': 'nicolas@kickhub.com',
+        'senha': SENHA_ADMIN_HASH, # gestor123
+        'perfil': 'GESTOR'
+    },
+    {
+        'nome': 'Vinicius Buskievicz',
+        'email': 'vinicius@kickhub.com',
+        'senha': SENHA_VENDEDOR_HASH, # vendedor123
+        'perfil': 'VENDEDOR'
+    },
+    {
+        'nome': 'Alisson Eraldo',
+        'email': 'alisson@kickhub.com',
+        'senha': SENHA_VENDEDOR_HASH, # vendedor123
+        'perfil': 'VENDEDOR'
+    }
+]
+
+for user in USUARIOS_SISTEMA:
     cur.execute('''
         INSERT INTO usuarios (nome, email, senha, perfil)
         VALUES (%s, %s, %s, %s)
     ''', (
-        nome,
-        email,
-        senha,
-        'GESTOR' if i == 0 else 'VENDEDOR'
+        user['nome'],
+        user['email'],
+        user['senha'],
+        user['perfil']
     ))
 conn.commit()
 
@@ -159,5 +183,5 @@ print(f"""
    clientes  : {QTD_CLIENTES}
    produtos  : {QTD_PRODUTOS}
    vendas    : {QTD_VENDAS}
-   usuarios  : 10
+   usuarios  : 4
 """)
