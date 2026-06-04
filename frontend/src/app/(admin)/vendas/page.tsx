@@ -2,8 +2,8 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Plus, Eye, Trash2, Search, Filter } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Plus, Trash2, Search, Filter, Edit2, ShoppingCart } from "lucide-react";
 import { vendaService } from "@/services/vendaService";
 import { PaginationMeta, Venda } from "@/types";
 import Button from "@/components/ui/Button";
@@ -11,6 +11,7 @@ import Card from "@/components/ui/Card";
 import Pagination from "@/components/ui/Pagination";
 import Table, { TableRow, TableCell } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
+import Modal from "@/components/ui/Modal";
 import {
   AppSwal as MySwal,
   showErrorAlert,
@@ -51,6 +52,7 @@ export default function VendasPage() {
 }
 
 function VendasContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search") ?? "";
   const [vendas, setVendas] = useState<Venda[]>([]);
@@ -63,6 +65,13 @@ function VendasContent() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] =
     useState<PaginationMeta>(initialPagination);
+  
+  const [selectedVenda, setSelectedVenda] = useState<Venda | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setSearchTerm(searchParam);
+  }, [searchParam]);
 
   const fetchVendas = async (pageToLoad = page) => {
     try {
@@ -122,6 +131,11 @@ function VendasContent() {
         showErrorAlert(error, "Nao foi possivel cancelar a venda.");
       }
     }
+  };
+
+  const openDetails = (venda: Venda) => {
+    setSelectedVenda(venda);
+    setIsModalOpen(true);
   };
 
   return (
@@ -219,16 +233,29 @@ function VendasContent() {
         )}
 
         <Table
-          headers={["ID", "Cliente", "Data", "Total", "Status", "Acoes"]}
+          headers={["ID", "Cliente", "Produtos", "Data", "Total", "Status", "Acoes"]}
           isLoading={loading}
         >
           {vendas.map((venda) => (
-            <TableRow key={venda.id}>
-              <TableCell className="font-mono text-xs text-neutral-500">
+            <TableRow 
+              key={venda.id} 
+              onClick={() => openDetails(venda)} 
+              className="cursor-pointer hover:bg-neutral-900 transition-colors group"
+            >
+              <TableCell className="font-mono text-xs text-neutral-500 group-hover:text-red-500">
                 #{venda.id.toString().padStart(6, "0")}
               </TableCell>
               <TableCell className="font-medium text-white">
                 {venda.cliente?.nome || "N/A"}
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1 max-w-[200px]">
+                  {venda.itens?.map(item => (
+                    <span key={item.id} className="text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded border border-neutral-700">
+                      #{item.produtoId}
+                    </span>
+                  ))}
+                </div>
               </TableCell>
               <TableCell>
                 {venda.dataVenda || venda.data
@@ -237,7 +264,7 @@ function VendasContent() {
                     )
                   : "-"}
               </TableCell>
-              <TableCell className="text-white font-bold">
+              <TableCell className="text-white font-bold whitespace-nowrap">
                 R${" "}
                 {Number(venda.total).toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
@@ -249,24 +276,35 @@ function VendasContent() {
                 </Badge>
               </TableCell>
               <TableCell>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-neutral-400 hover:text-white"
-                  >
-                    <Eye size={16} />
-                  </Button>
-                  {venda.status !== "CANCELADO" && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-400"
-                      onClick={() => handleCancelar(venda.id)}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  )}
+                <div className="flex items-center justify-end" onClick={e => e.stopPropagation()}>
+                  <div className="grid grid-cols-2 gap-0.5 w-16">
+                    <div className="flex justify-center">
+                      {venda.status === "PENDENTE_PAGAMENTO" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-neutral-400 hover:text-white hover:bg-white/5"
+                          onClick={() => router.push(`/vendas/${venda.id}/editar`)}
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                      ) : (
+                        <div className="w-7 h-7" />
+                      )}
+                    </div>
+                    <div className="flex justify-center">
+                      {venda.status !== "CANCELADO" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500 hover:text-red-400 hover:bg-red-500/5"
+                          onClick={() => handleCancelar(venda.id)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </TableCell>
             </TableRow>
@@ -274,7 +312,7 @@ function VendasContent() {
           {!loading && vendas.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={6}
+                colSpan={7}
                 className="py-10 text-center text-neutral-500"
               >
                 Nenhuma venda realizada.
@@ -291,6 +329,92 @@ function VendasContent() {
           />
         </div>
       </Card>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={`Detalhes da Venda #${selectedVenda?.id.toString().padStart(6, "0")}`}
+        size="2xl"
+      >
+        {selectedVenda && (
+          <div className="space-y-8 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="rounded-2xl bg-neutral-900/50 border border-neutral-800 p-6 flex flex-col justify-center">
+                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Cliente</p>
+                <p className="text-white font-black text-2xl leading-tight">{selectedVenda.cliente?.nome}</p>
+                <p className="text-neutral-400 text-sm mt-1">{selectedVenda.cliente?.email}</p>
+              </div>
+              <div className="rounded-2xl bg-neutral-900/50 border border-neutral-800 p-6 flex flex-col justify-between gap-4">
+                <div className="flex justify-between items-center h-full">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] leading-none">Status</p>
+                    <Badge variant={statusVariant[selectedVenda.status] ?? "success"} className="w-fit text-sm px-4 py-1.5 font-black uppercase">
+                      {statusLabel[selectedVenda.status] ?? selectedVenda.status}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-col text-right gap-1">
+                    <p className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] leading-none">Data da Venda</p>
+                    <p className="text-xl font-black text-white tracking-tight">
+                      {new Date(selectedVenda.dataVenda || selectedVenda.data || '').toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-800 overflow-hidden bg-[#0f0f0f] shadow-inner">
+              <div className="p-1">
+                <Table 
+                  headers={['Produto', 'Marca', 'Cor', 'Tam', 'Gênero', 'Preço Un.', 'Qtd', 'Subtotal']}
+                  className="!mb-0 !border-0"
+                >
+                  {selectedVenda.itens?.map((item) => (
+                    <TableRow key={item.id} className="border-b border-neutral-900/50 last:border-0 hover:bg-white/[0.02] transition-colors">
+                      <TableCell className="py-5">
+                        <p className="text-white font-black text-sm uppercase tracking-tight">{item.produto?.nome}</p>
+                        <p className="text-[10px] text-neutral-600 font-mono mt-0.5">SKU: {item.produtoId}</p>
+                      </TableCell>
+                      <TableCell className="text-neutral-400 font-bold text-xs">{item.produto?.marca}</TableCell>
+                      <TableCell className="text-neutral-400 font-medium text-xs">{item.produto?.cor}</TableCell>
+                      <TableCell className="font-black text-white">
+                        <span className="bg-neutral-800 px-2 py-1 rounded text-xs">
+                          {item.produto?.tamanho}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-neutral-500 text-[10px] font-bold uppercase tracking-tighter">{item.produto?.genero}</TableCell>
+                      <TableCell className="text-neutral-300 font-bold">
+                        {Number(item.precoUnitario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="bg-red-600/10 text-red-500 px-2.5 py-1 rounded-lg text-xs font-black border border-red-600/10">
+                          {item.quantidade}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-white font-black text-right pr-6">
+                        {(item.quantidade * item.precoUnitario).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </Table>
+              </div>
+              <div className="bg-neutral-900 p-8 flex justify-between items-center border-t border-neutral-800">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+                    <ShoppingCart size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.3em] leading-none block mb-1">Total do Pedido</span>
+                    <p className="text-neutral-400 text-xs font-medium">Impostos e taxas inclusas</p>
+                  </div>
+                </div>
+                <span className="text-5xl font-black text-white tracking-tighter">
+                  {Number(selectedVenda.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

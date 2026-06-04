@@ -14,4 +14,5 @@ export interface AuthUsuario {
 
 export interface LoginResponse {
   usuario: AuthUsuario;
+  access_token: string;
 }

@@ -159,6 +159,7 @@ function ProdutosContent() {
 
         <Table
           headers={[
+            "SKU",
             "Nome",
             "Categoria",
             "Marca",
@@ -166,13 +167,16 @@ function ProdutosContent() {
             "Genero",
             "Tamanho",
             "Preco",
-            "Estoque",
+            { label: "Estoque", align: "center" },
             "Acoes",
           ]}
           isLoading={loading}
         >
           {produtos.map((produto) => (
             <TableRow key={produto.id}>
+              <TableCell className="font-mono text-xs text-neutral-500">
+                #{produto.id}
+              </TableCell>
               <TableCell className="font-medium text-white">
                 {produto.nome}
               </TableCell>
@@ -192,7 +196,7 @@ function ProdutosContent() {
                 })}
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
                   <span
                     className={
                       produto.estoque < 5
@@ -200,10 +204,10 @@ function ProdutosContent() {
                         : "text-neutral-300"
                     }
                   >
-                    {produto.estoque}
+                    {produto.estoque} un
                   </span>
                   {produto.estoque < 5 && (
-                    <Badge variant="error" className="animate-pulse">
+                    <Badge variant="error" className="animate-pulse text-[10px] py-0 px-2 w-fit">
                       Estoque baixo
                     </Badge>
                   )}
