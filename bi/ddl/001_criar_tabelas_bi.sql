@@ -54,14 +54,3 @@ CREATE TABLE IF NOT EXISTS bi_venda_itens (
     precoUnitario FLOAT,
     subtotal FLOAT
 );
-
--- ML Scores Table
-CREATE TABLE IF NOT EXISTS ml_cliente_scores (
-    id SERIAL PRIMARY KEY,
-    cliente_id BIGINT,
-    score_compra FLOAT,       -- 0.0 to 1.0, propensity to buy
-    risco_churn FLOAT,        -- 0.0 to 1.0
-    classificacao VARCHAR(50), -- 'alto', 'medio', 'baixo'
-    calculado_em TIMESTAMP DEFAULT NOW()
-);
-

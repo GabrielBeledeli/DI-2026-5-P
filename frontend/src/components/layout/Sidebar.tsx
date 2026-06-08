@@ -14,6 +14,7 @@ import {
   Tag,
   User,
   Users,
+  FileText,
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -30,8 +31,10 @@ type UsuarioLogado = {
 };
 
 const menuItems = [
-  { label: 'PRINCIPAL', type: 'header' },
+  { label: 'HUB ANALYTICS', type: 'header' },
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Análise Clientes', href: '/dashboard/analise-clientes', icon: BarChart2, roles: ['GESTOR'] },
+  { label: 'Relatórios PDF', href: '/dashboard/relatorios', icon: FileText, roles: ['GESTOR'] },
 
   { label: 'CADASTROS', type: 'header' },
   { label: 'Clientes', href: '/clientes', icon: Users },
@@ -111,6 +114,11 @@ export default function Sidebar() {
 
             const Icon = item.icon;
             const isActive = pathname === item.href;
+
+            // Filtro de Roles
+            if (item.roles && usuario && !item.roles.includes(usuario.perfil)) {
+              return null;
+            }
 
             return (
               <Link
