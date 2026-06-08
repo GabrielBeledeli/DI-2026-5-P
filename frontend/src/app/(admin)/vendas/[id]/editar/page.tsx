@@ -83,7 +83,9 @@ export default function EditarVendaPage({ params }: EditarVendaPageProps) {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Editar Venda #{id.padStart(6, '0')}</h1>
+        <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+          Editar <span className="text-red-600">Venda</span> #{id.padStart(6, '0')}
+        </h1>
         <p className="text-neutral-500">Altere o status ou manipule os itens da venda pendente.</p>
       </div>
 

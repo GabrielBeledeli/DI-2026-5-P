@@ -45,6 +45,12 @@ export interface Venda {
   data?: string;
   dataVenda?: string;
   cliente?: Cliente;
+  usuario?: {
+    id: number;
+    nome: string;
+    email: string;
+    perfil: string;
+  };
   itens?: VendaItem[];
 }
 

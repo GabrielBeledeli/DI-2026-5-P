@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, Trash2, Search, Filter, Edit2, ShoppingCart } from "lucide-react";
 import { vendaService } from "@/services/vendaService";
+import { usuarioService, Vendedor } from "@/services/usuarioService";
 import { PaginationMeta, Venda } from "@/types";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -56,10 +57,12 @@ function VendasContent() {
   const searchParams = useSearchParams();
   const searchParam = searchParams.get("search") ?? "";
   const [vendas, setVendas] = useState<Venda[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParam);
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
+  const [vendedorFilter, setVendedorFilter] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [page, setPage] = useState(1);
@@ -73,6 +76,18 @@ function VendasContent() {
     setSearchTerm(searchParam);
   }, [searchParam]);
 
+  useEffect(() => {
+    const fetchVendedores = async () => {
+      try {
+        const data = await usuarioService.listarVendedores();
+        setVendedores(data);
+      } catch (error) {
+        console.error("Erro ao carregar vendedores:", error);
+      }
+    };
+    fetchVendedores();
+  }, []);
+
   const fetchVendas = async (pageToLoad = page) => {
     try {
       setLoading(true);
@@ -81,6 +96,7 @@ function VendasContent() {
         limit: PAGE_SIZE,
         search: searchTerm,
         status: statusFilter,
+        usuarioId: vendedorFilter,
         dataInicio,
         dataFim,
       });
@@ -95,7 +111,7 @@ function VendasContent() {
 
   useEffect(() => {
     fetchVendas(page);
-  }, [page, searchTerm, statusFilter, dataInicio, dataFim]);
+  }, [page, searchTerm, statusFilter, vendedorFilter, dataInicio, dataFim]);
 
   const handleFilterChange = (callback: () => void) => {
     setPage(1);
@@ -106,6 +122,7 @@ function VendasContent() {
     setPage(1);
     setSearchTerm("");
     setStatusFilter("");
+    setVendedorFilter("");
     setDataInicio("");
     setDataFim("");
   };
@@ -142,11 +159,11 @@ function VendasContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Vendas
+          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+            Listagem <span className="text-red-600">Vendas</span>
           </h1>
           <p className="text-neutral-500">
-            Historico e gestao de pedidos realizados.
+            Histórico e gestão de pedidos realizados.
           </p>
         </div>
         <Link href="/vendas/nova">
@@ -185,7 +202,7 @@ function VendasContent() {
         </div>
 
         {showFilters && (
-          <div className="mb-6 grid gap-4 rounded-lg border border-neutral-800 bg-[#0f0f0f] p-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+          <div className="mb-6 grid gap-4 rounded-lg border border-neutral-800 bg-[#0f0f0f] p-4 md:grid-cols-[1fr_1fr_1fr_1fr_auto] md:items-end">
             <label className="flex flex-col gap-1.5 text-sm text-neutral-400">
               Status
               <select
@@ -199,6 +216,24 @@ function VendasContent() {
                 <option value="CONCLUIDA">Concluida</option>
                 <option value="PENDENTE_PAGAMENTO">Pendente</option>
                 <option value="CANCELADO">Cancelada</option>
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-sm text-neutral-400">
+              Vendedor
+              <select
+                className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                value={vendedorFilter}
+                onChange={(event) =>
+                  handleFilterChange(() => setVendedorFilter(event.target.value))
+                }
+              >
+                <option value="">Todos</option>
+                {vendedores.map((v) => (
+                  <option key={v.id.toString()} value={v.id.toString()}>
+                    {v.nome}
+                  </option>
+                ))}
               </select>
             </label>
 
@@ -233,7 +268,7 @@ function VendasContent() {
         )}
 
         <Table
-          headers={["ID", "Cliente", "Produtos", "Data", "Total", "Status", "Acoes"]}
+          headers={["ID", "Cliente", "Vendedor", "Produtos", "Data", "Total", "Status", "Ações"]}
           isLoading={loading}
         >
           {vendas.map((venda) => (
@@ -247,6 +282,9 @@ function VendasContent() {
               </TableCell>
               <TableCell className="font-medium text-white">
                 {venda.cliente?.nome || "N/A"}
+              </TableCell>
+              <TableCell className="text-neutral-400 text-sm">
+                {venda.usuario?.nome || "Sistema"}
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1 max-w-[200px]">
@@ -312,7 +350,7 @@ function VendasContent() {
           {!loading && vendas.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={8}
                 className="py-10 text-center text-neutral-500"
               >
                 Nenhuma venda realizada.
@@ -338,11 +376,16 @@ function VendasContent() {
       >
         {selectedVenda && (
           <div className="space-y-8 pt-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="rounded-2xl bg-neutral-900/50 border border-neutral-800 p-6 flex flex-col justify-center">
                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Cliente</p>
                 <p className="text-white font-black text-2xl leading-tight">{selectedVenda.cliente?.nome}</p>
                 <p className="text-neutral-400 text-sm mt-1">{selectedVenda.cliente?.email}</p>
+              </div>
+              <div className="rounded-2xl bg-neutral-900/50 border border-neutral-800 p-6 flex flex-col justify-center">
+                <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2">Vendedor</p>
+                <p className="text-white font-black text-xl leading-tight">{selectedVenda.usuario?.nome || "Sistema"}</p>
+                <p className="text-neutral-400 text-sm mt-1">{selectedVenda.usuario?.email}</p>
               </div>
               <div className="rounded-2xl bg-neutral-900/50 border border-neutral-800 p-6 flex flex-col justify-between gap-4">
                 <div className="flex justify-between items-center h-full">
@@ -353,9 +396,9 @@ function VendasContent() {
                     </Badge>
                   </div>
                   <div className="flex flex-col text-right gap-1">
-                    <p className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] leading-none">Data da Venda</p>
+                    <p className="text-[11px] font-black text-neutral-500 uppercase tracking-[0.2em] leading-none">Data</p>
                     <p className="text-xl font-black text-white tracking-tight">
-                      {new Date(selectedVenda.dataVenda || selectedVenda.data || '').toLocaleString('pt-BR')}
+                      {new Date(selectedVenda.dataVenda || selectedVenda.data || '').toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                 </div>

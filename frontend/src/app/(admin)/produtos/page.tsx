@@ -125,8 +125,8 @@ function ProdutosContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Produtos
+          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+            Listagem <span className="text-red-600">Produtos</span>
           </h1>
           <p className="text-neutral-500">
             Catalogo de sneakers e controle de estoque.

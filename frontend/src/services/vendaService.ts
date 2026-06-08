@@ -16,6 +16,7 @@ type ListarPaginadoParams = {
   limit?: number;
   search?: string;
   status?: string;
+  usuarioId?: string;
   dataInicio?: string;
   dataFim?: string;
 };
@@ -33,6 +34,7 @@ export const vendaService = {
         limit: params.limit ?? 50,
         search: params.search || undefined,
         status: params.status || undefined,
+        usuarioId: params.usuarioId || undefined,
         dataInicio: params.dataInicio || undefined,
         dataFim: params.dataFim || undefined,
       },

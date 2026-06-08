@@ -97,8 +97,8 @@ function ClientesContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Clientes
+          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+            Listagem <span className="text-red-600">Clientes</span>
           </h1>
           <p className="text-neutral-500">
             Gerencie sua base de clientes corporativos.
