@@ -47,29 +47,29 @@ export default function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
         onClick={onClose}
       />
       
       <div className={cn(
-        "relative w-full rounded-xl border border-neutral-800 bg-[#1a1a1a] shadow-2xl animate-in fade-in zoom-in duration-200",
+        "relative flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-xl border border-neutral-800 bg-[#1a1a1a] shadow-2xl animate-in fade-in zoom-in duration-200 sm:max-h-[calc(100dvh-2rem)]",
         sizes[size]
       )}>
-        <div className="flex items-center justify-between border-b border-neutral-800 p-6">
-          <h3 className="text-xl font-semibold text-white">{title}</h3>
+        <div className="flex items-center justify-between gap-3 border-b border-neutral-800 p-4 sm:p-6">
+          <h3 className="min-w-0 break-words text-lg font-semibold text-white sm:text-xl">{title}</h3>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X size={20} />
           </Button>
         </div>
         
-        <div className="p-6">
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
           {children}
         </div>
         
         {footer && (
-          <div className="flex justify-end gap-3 border-t border-neutral-800 p-6">
+          <div className="flex flex-col-reverse gap-3 border-t border-neutral-800 p-4 sm:flex-row sm:justify-end sm:p-6">
             {footer}
           </div>
         )}

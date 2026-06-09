@@ -1,5 +1,16 @@
-import { Controller, Get, Query, Res, StreamableFile, Post } from '@nestjs/common';
-import { DashboardService, DashboardStatsParams, CustomerAnalysisParams } from './dashboard.service';
+import {
+  Controller,
+  Get,
+  Query,
+  Res,
+  StreamableFile,
+  Post,
+} from '@nestjs/common';
+import {
+  DashboardService,
+  DashboardStatsParams,
+  CustomerAnalysisParams,
+} from './dashboard.service';
 import { CurrentUser } from '../auth/user.decorator';
 import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
@@ -8,6 +19,18 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+function resolvePythonExecutable(venvPath: string, envVarName: string) {
+  const customPython = process.env[envVarName];
+  if (customPython) return customPython;
+
+  const pythonExe =
+    process.platform === 'win32'
+      ? join(venvPath, 'venv', 'Scripts', 'python.exe')
+      : join(venvPath, 'venv', 'bin', 'python');
+
+  return pythonExe;
+}
+
 @Controller('dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
@@ -15,7 +38,7 @@ export class DashboardController {
   @Get('stats')
   async getStats(
     @Query() query: DashboardStatsParams,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     return this.dashboardService.getStats(query, user);
   }
@@ -23,7 +46,7 @@ export class DashboardController {
   @Get('customer-analysis')
   async getCustomerAnalysis(
     @Query() query: CustomerAnalysisParams,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     if (user.perfil !== 'GESTOR') {
       throw new Error('Acesso restrito ao perfil de Gestor.');
@@ -36,17 +59,17 @@ export class DashboardController {
     if (user.perfil !== 'GESTOR') throw new Error('Acesso negado.');
 
     const baseBIPath = join(process.cwd(), '..', 'bi', 'python');
-    
+
     // 1. Executa o ETL
     const etlPath = join(baseBIPath, 'etl_oltp_to_bi');
-    const etlExe = join(etlPath, 'venv', 'Scripts', 'python.exe');
+    const etlExe = resolvePythonExecutable(etlPath, 'PYTHON_ETL_EXECUTABLE');
     const etlScript = join(etlPath, 'etl_pipeline.py');
     console.log('Iniciando ETL...');
     await execAsync(`"${etlExe}" "${etlScript}"`);
 
     // 2. Executa o ML
     const mlPath = join(baseBIPath, 'ml_churn_rfm');
-    const mlExe = join(mlPath, 'venv', 'Scripts', 'python.exe');
+    const mlExe = resolvePythonExecutable(mlPath, 'PYTHON_ML_EXECUTABLE');
     const mlScript = join(mlPath, 'ml_churn_rfm.py');
     console.log('Iniciando Recálculo de ML...');
     await execAsync(`"${mlExe}" "${mlScript}"`);
@@ -55,18 +78,24 @@ export class DashboardController {
   }
 
   @Get('report/managerial')
-  async generateManagerialReport(@Res({ passthrough: true }) res, @CurrentUser() user: any) {
+  async generateManagerialReport(
+    @Res({ passthrough: true }) res,
+    @CurrentUser() user: any,
+  ) {
     if (user.perfil !== 'GESTOR') throw new Error('Acesso negado.');
-    
+
     // Antes de gerar, garante que os dados estão atualizados
     await this.refreshIntelligence(user);
-    
+
     const baseBIPath = join(process.cwd(), '..', 'bi', 'python', 'relatorios');
-    const pythonExe = join(baseBIPath, 'venv', 'Scripts', 'python.exe');
+    const pythonExe = resolvePythonExecutable(
+      baseBIPath,
+      'PYTHON_RELATORIOS_EXECUTABLE',
+    );
     const scriptPath = join(baseBIPath, 'gerar_relatorio_gerencial.py');
-    
+
     await execAsync(`"${pythonExe}" "${scriptPath}"`);
-    
+
     const fileName = 'relatorio_gerencial.pdf';
     const filePath = join(baseBIPath, 'arquivos', fileName);
 
@@ -81,18 +110,24 @@ export class DashboardController {
   }
 
   @Get('report/strategic')
-  async generateStrategicReport(@Res({ passthrough: true }) res, @CurrentUser() user: any) {
+  async generateStrategicReport(
+    @Res({ passthrough: true }) res,
+    @CurrentUser() user: any,
+  ) {
     if (user.perfil !== 'GESTOR') throw new Error('Acesso negado.');
-    
+
     // Antes de gerar, garante que os dados estão atualizados
     await this.refreshIntelligence(user);
-    
+
     const baseBIPath = join(process.cwd(), '..', 'bi', 'python', 'relatorios');
-    const pythonExe = join(baseBIPath, 'venv', 'Scripts', 'python.exe');
+    const pythonExe = resolvePythonExecutable(
+      baseBIPath,
+      'PYTHON_RELATORIOS_EXECUTABLE',
+    );
     const scriptPath = join(baseBIPath, 'gerar_relatorio_estrategico.py');
-    
+
     await execAsync(`"${pythonExe}" "${scriptPath}"`);
-    
+
     const fileName = 'relatorio_estrategico.pdf';
     const filePath = join(baseBIPath, 'arquivos', fileName);
 

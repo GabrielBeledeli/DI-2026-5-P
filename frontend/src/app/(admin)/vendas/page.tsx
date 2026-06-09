@@ -157,24 +157,24 @@ function VendasContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-bold text-white tracking-tight uppercase italic sm:text-3xl">
             Listagem <span className="text-red-600">Vendas</span>
           </h1>
-          <p className="text-neutral-500">
+          <p className="break-words text-sm text-neutral-500 sm:text-base">
             Histórico e gestão de pedidos realizados.
           </p>
         </div>
         <Link href="/vendas/nova">
-          <Button leftIcon={<Plus size={18} />}>Nova Venda</Button>
+          <Button className="w-full sm:w-auto" leftIcon={<Plus size={18} />}>Nova Venda</Button>
         </Link>
       </div>
 
       <Card>
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex flex-1 items-center gap-4">
-            <div className="relative max-w-sm flex-1">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1 sm:max-w-sm">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
                 size={18}

@@ -21,126 +21,139 @@ O **KickHub** é uma plataforma de gestão centralizada desenvolvida para o merc
 
 ## 🛠️ Stack Tecnológica
 
-| Camada | Tecnologia |
-|:--- | :--- |
-| **Frontend** | Next.js 15, TypeScript, TailwindCSS, Lucide Icons, SweetAlert2 |
-| **Backend** | NestJS, TypeScript, Prisma ORM, Passport JWT (HttpOnly) |
-| **Banco de Dados** | PostgreSQL (Dockerizado) |
-| **Data & ML** | Python 3.10+, Scikit-learn, Pandas, Psycopg2 |
-| **Infraestrutura** | Docker + Docker Compose |
+| Camada             | Tecnologia                                                     |
+| :----------------- | :------------------------------------------------------------- |
+| **Frontend**       | Next.js 15, TypeScript, TailwindCSS, Lucide Icons, SweetAlert2 |
+| **Backend**        | NestJS, TypeScript, Prisma ORM, Passport JWT (HttpOnly)        |
+| **Banco de Dados** | PostgreSQL (Dockerizado)                                       |
+| **Data & ML**      | Python 3.10+, Scikit-learn, Pandas, Psycopg2                   |
+| **Infraestrutura** | Docker + Docker Compose                                        |
 
 ---
 
 ## 🚀 Como Executar o Projeto (Passo a Passo)
 
-Siga a ordem abaixo para garantir que todas as dependências e bancos de dados estejam configurados corretamente.
+Siga a ordem abaixo para subir o projeto corretamente. O Docker agora roda os bancos, o backend e o frontend. As dependências Node são instaladas dentro das imagens, então você não precisa rodar `npm install` manualmente toda vez.
 
 ### 📦 Parte 1: Aplicação & Infraestrutura
 
-#### 1. Clonar e Iniciar o Docker
-Certifique-se de ter o **Docker** e o **Node.js** instalados.
+#### 1. Clonar e Configurar o Projeto
+
+Certifique-se de ter o **Docker** instalado e aberto.
 
 ```bash
 # Clone o repositório
 git clone https://github.com/gabriel-hulbe/DI-2026-5-P.git
 cd DI-2026-5-P
 
-# Inicie o banco de dados via Docker
-docker-compose up -d
-
 # Configure o .env na raiz
 cp .env.exemplo .env
 ```
 
-#### 2. Configurar o Backend (NestJS)
-```bash
-cd backend
-npm install
-npx prisma migrate dev
-npm run start:dev
-```
-O backend rodará em `http://localhost:3001`.
+No Windows PowerShell, se `cp` não funcionar:
 
-#### 3. Configurar o Frontend (Next.js)
-Abra um novo terminal na pasta raiz:
-```bash
-cd frontend
-npm install
-npm run dev
+```powershell
+Copy-Item .env.exemplo .env
 ```
-O frontend estará disponível em `http://localhost:3000`.
+
+#### 2. Subir a Aplicação com Docker
+
+Na primeira execução, rode:
+
+```bash
+docker compose up --build
+```
+
+Nas próximas execuções, rode apenas:
+
+```bash
+docker compose up
+```
+
+Use `--build` novamente apenas quando mudar `package.json`, `package-lock.json`, `Dockerfile` ou `docker-compose.yml`.
+
+#### 3. Rodar as Migrations
+
+Com os containers rodando, abra outro terminal na raiz do projeto:
+
+```bash
+docker compose exec backend npx prisma migrate dev
+```
+
+Se precisar apenas regenerar o Prisma Client:
+
+```bash
+docker compose exec backend npx prisma generate
+```
+
+#### 4. Acessos
+
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:3001`
+- Banco transacional: `localhost:5432`
+- Banco BI: `localhost:5433`
 
 ---
 
 ### 📊 Parte 2: Configuração dos Motores de BI & IA (Obrigatório)
 
-Siga esta sequência exata de comandos no seu terminal para preparar e rodar a inteligência do sistema. **Não pule nenhum passo.**
+Siga esta sequência exata para preparar a inteligência do sistema. Os comandos rodam dentro do container do backend, usando o Python já instalado na imagem Docker.
 
 ---
 
 #### 1️⃣ Passo: Popular o Banco Transacional (Seeder)
+
 ```bash
-# Entre na pasta
-cd bi/python/seeder
-
-# Prepare o ambiente
-python -m venv venv
-.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
-
-# Instale e Rode
-pip install -r requirements.txt
-python seeder.py
+docker compose exec backend /opt/kickhub-bi-seeder-venv/bin/python /bi/python/seeder/seeder.py
 ```
 
 #### 2️⃣ Passo: Sincronizar o Banco de BI (ETL)
+
 ```bash
-# Saia da pasta anterior e entre na do ETL
-cd ../etl_oltp_to_bi
-
-# Prepare o ambiente
-python -m venv venv
-.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
-
-# Instale e Rode
-pip install -r requirements.txt
-python etl_pipeline.py
+docker compose exec backend /opt/kickhub-bi-etl-venv/bin/python /bi/python/etl_oltp_to_bi/etl_pipeline.py
 ```
 
 #### 3️⃣ Passo: Gerar a Inteligência de IA (ML Churn & RFM)
+
 ```bash
-# Saia da pasta anterior e entre na do ML
-cd ../ml_churn_rfm
-
-# Prepare o ambiente
-python -m venv venv
-.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
-
-# Instale e Rode
-pip install -r requirements.txt
-python ml_churn_rfm.py
+docker compose exec backend /opt/kickhub-bi-ml-venv/bin/python /bi/python/ml_churn_rfm/ml_churn_rfm.py
 ```
 
 #### 4️⃣ Passo: Preparar o Motor de Relatórios PDF
-```bash
-# Saia da pasta anterior e entre na de Relatórios
-cd ../relatorios
 
-# Prepare o ambiente
-python -m venv venv
-.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
-
-# Instale os requisitos (Pronto para uso via sistema)
-pip install -r requirements.txt
-```
+No Docker, o motor de relatórios já fica preparado durante o build da imagem do backend. Não é necessário rodar `pip install -r requirements.txt` manualmente.
 
 ---
 
 #### 🎯 Resultado Final
-Após seguir os 4 blocos acima, o sistema estará com "as luzes acesas". 
+
+Após seguir os passos acima, o sistema estará com "as luzes acesas".
+
 1. Acesse `http://localhost:3000` como **Gestor** (`gabriel@kickhub.com` / `gestor123`).
 2. Tudo estará carregado: Dashboards, Scores de Clientes e Relatórios.
 
 > **Dica:** Daqui para frente, você não precisa mais voltar ao terminal. Sempre que quiser dados novos, use o botão **"Atualizar BI"** dentro do próprio Dashboard.
+
+#### Comandos Úteis
+
+Parar os containers:
+
+```bash
+docker compose down
+```
+
+Parar os containers e apagar volumes:
+
+```bash
+docker compose down -v
+```
+
+Ver logs:
+
+```bash
+docker compose logs -f backend
+docker compose logs -f frontend
+```
 
 ---
 
@@ -148,12 +161,12 @@ Após seguir os 4 blocos acima, o sistema estará com "as luzes acesas".
 
 Utilize os seguintes usuários após a execução do seeder:
 
-| Perfil | E-mail | Senha |
-| :--- | :--- | :--- |
-| **Gestor** | `gabriel@kickhub.com` | `gestor123` |
-| **Gestor** | `nicolas@kickhub.com` | `vendedor123` |
+| Perfil       | E-mail                 | Senha         |
+| :----------- | :--------------------- | :------------ |
+| **Gestor**   | `gabriel@kickhub.com`  | `gestor123`   |
+| **Gestor**   | `nicolas@kickhub.com`  | `vendedor123` |
 | **Vendedor** | `vinicius@kickhub.com` | `vendedor123` |
-| **Vendedor** | `alisson@kickhub.com` | `vendedor123` |
+| **Vendedor** | `alisson@kickhub.com`  | `vendedor123` |
 
 ---
 
@@ -174,10 +187,10 @@ DI-2026-5-P/
 
 ## 👥 Equipe DI - 2026
 
-*   **Gabriel Beledeli Hul**
-*   **Nicolas Miguel**
-*   **Vinicius Buskievicz**
-*   **Alisson Eraldo**
+- **Gabriel Beledeli Hul**
+- **Nicolas Miguel**
+- **Vinicius Buskievicz**
+- **Alisson Eraldo**
 
 ---
 

@@ -4,6 +4,7 @@ import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Footprints, Lock, Mail } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 import { AppSwal as MySwal } from '@/lib/alerts';
 import api from '@/services/api';
 
@@ -52,13 +53,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f] px-4">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-10 shadow-2xl">
+    <div className="flex min-h-screen items-center justify-center bg-[#0f0f0f] px-4 py-8">
+      <ThemeToggle className="fixed right-4 top-4 z-10" />
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-6 shadow-2xl sm:p-10">
         <div className="flex flex-col items-center justify-center space-y-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg shadow-red-600/20">
             <Footprints size={28} />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Kick<span className="text-red-600">Hub</span>
           </h1>
           <p className="text-sm text-neutral-500">Acesse o sistema de gestão de sneakers</p>

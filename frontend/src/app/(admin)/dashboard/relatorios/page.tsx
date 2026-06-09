@@ -48,19 +48,19 @@ export default function RelatoriosPDFPage() {
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-bold text-white tracking-tight uppercase italic sm:text-3xl">
             Central <span className="text-red-600">Relatórios</span>
           </h1>
           <p className="text-neutral-500">Geração de documentos analíticos para tomada de decisão.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-8">
         {/* Card Relatório Gerencial */}
         <div className="group relative overflow-hidden rounded-3xl border border-neutral-800 bg-[#1a1a1a] p-1 transition-all hover:border-red-600/30">
-          <div className="relative z-10 p-8 space-y-6">
+          <div className="relative z-10 space-y-6 p-5 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="rounded-2xl bg-red-600/10 p-4 text-red-600">
                 <BarChart3 size={32} />
@@ -106,7 +106,7 @@ export default function RelatoriosPDFPage() {
 
         {/* Card Relatório Estratégico */}
         <div className="group relative overflow-hidden rounded-3xl border border-neutral-800 bg-[#1a1a1a] p-1 transition-all hover:border-red-600/30 shadow-2xl">
-          <div className="relative z-10 p-8 space-y-6">
+          <div className="relative z-10 space-y-6 p-5 sm:p-8">
             <div className="flex items-center justify-between">
               <div className="rounded-2xl bg-red-600/10 p-4 text-red-600">
                 <Activity size={32} />

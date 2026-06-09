@@ -288,7 +288,35 @@ class KickHubEstrategicoReporter:
         """
         df_c = pd.read_sql(q_c, conn)
         if not df_c.empty:
-            piv = df_c.pivot(index='cohort_month', columns='month_number', values='active_customers').fillna(0); lmap = df_c.set_index('cohort_month')['mes_safra'].to_dict(); piv.index = [lmap[i] for i in piv.index]; piv.columns = piv.columns.astype(int); cpct = piv.div(piv[0], axis=0) * 100; plt.close('all'); fig, ax = plt.subplots(figsize=(12, 6), facecolor='#f9fafb'); import seaborn as sns; sns.heatmap(cpct, annot=True, fmt=".1f", cmap="Reds", cbar=False, ax=ax); plt.title("Taxa de Retenção Cohort (%)", fontweight='bold'); plt.xlabel(""); plt.ylabel(""); c_path = os.path.join(self.output_dir, "strat_cohort.png"); plt.tight_layout(); plt.savefig(c_path, dpi=120); elements.append(Image(c_path, width=17.5*cm, height=8.5*cm))
+            piv = df_c.pivot(index='cohort_month', columns='month_number', values='active_customers').fillna(0)
+            lmap = df_c.set_index('cohort_month')['mes_safra'].to_dict()
+            piv.index = [lmap[i] for i in piv.index]
+            piv.columns = piv.columns.astype(int)
+            cpct = piv.div(piv[0].replace(0, 1), axis=0) * 100
+
+            plt.close('all')
+            fig, ax = plt.subplots(figsize=(12, 6), facecolor='#f9fafb')
+            heatmap = ax.imshow(cpct.values, cmap='Reds', aspect='auto', vmin=0, vmax=100)
+            ax.set_xticks(range(len(cpct.columns)))
+            ax.set_xticklabels(cpct.columns)
+            ax.set_yticks(range(len(cpct.index)))
+            ax.set_yticklabels(cpct.index)
+            ax.set_title("Taxa de Retenção Cohort (%)", fontweight='bold')
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+
+            for row_idx in range(cpct.shape[0]):
+                for col_idx in range(cpct.shape[1]):
+                    value = cpct.iloc[row_idx, col_idx]
+                    text_color = 'white' if value >= 55 else DARK_BLACK
+                    ax.text(col_idx, row_idx, f"{value:.1f}", ha='center', va='center', color=text_color, fontsize=8, fontweight='bold')
+
+            fig.colorbar(heatmap, ax=ax, fraction=0.03, pad=0.02)
+            c_path = os.path.join(self.output_dir, "strat_cohort.png")
+            plt.tight_layout()
+            plt.savefig(c_path, dpi=120)
+            plt.close()
+            elements.append(Image(c_path, width=17.5*cm, height=8.5*cm))
         
         elements.append(Paragraph(self.style_title("Clientes Diamante"), self.styles['KH_SectionTitle']))
         df_v = pd.read_sql("SELECT c.nome, s.valor_total, s.score_compra_rfm as score, mv.ultima_compra FROM ml_cliente_scores s JOIN bi_clientes c ON s.cliente_id = c.id LEFT JOIN (SELECT clienteId, MAX(dataVenda) as ultima_compra FROM bi_vendas GROUP BY clienteId) mv ON c.id = mv.clienteId WHERE s.score_compra_rfm >= 80 ORDER BY s.score_compra_rfm DESC LIMIT 20", conn)

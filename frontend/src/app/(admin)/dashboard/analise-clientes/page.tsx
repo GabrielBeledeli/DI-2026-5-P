@@ -91,9 +91,9 @@ export default function CustomerAnalysisPage() {
     switch (cls) {
       case 'Diamante': return 'success';
       case 'Ouro': return 'warning';
-      case 'Prata': return 'secondary';
-      case 'Bronze': return 'secondary';
-      default: return 'secondary';
+      case 'Prata': return 'default';
+      case 'Bronze': return 'default';
+      default: return 'default';
     }
   };
 
@@ -109,9 +109,9 @@ export default function CustomerAnalysisPage() {
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-bold text-white tracking-tight uppercase italic sm:text-3xl">
             Análise <span className="text-red-600">Clientes</span>
           </h1>
           <p className="text-neutral-500">Exploração analítica profunda da base de consumidores.</p>
@@ -122,26 +122,26 @@ export default function CustomerAnalysisPage() {
           )}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Button
             variant="outline"
             size="sm"
-            className="border-red-600/30 text-red-500 hover:bg-red-600/10"
+            className="w-full border-red-600/30 text-red-500 hover:bg-red-600/10 sm:w-auto"
             leftIcon={<RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />}
             onClick={handleRefreshIntelligence}
             disabled={refreshing || loading}
           >
             {refreshing ? "Atualizando BI..." : "Atualizar BI"}
           </Button>
-          <Button variant="outline" size="sm" leftIcon={<RefreshCw size={16} />} onClick={() => fetchData(meta.page)} disabled={loading}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" leftIcon={<RefreshCw size={16} />} onClick={() => fetchData(meta.page)} disabled={loading}>
             Atualizar Lista
           </Button>
         </div>
       </div>
 
       {/* Barra de Busca e Botão Filtro */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="relative min-w-0 flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
           <input
             type="text"
@@ -153,7 +153,7 @@ export default function CustomerAnalysisPage() {
         </div>
         <Button
           variant={showFilters ? "secondary" : "outline"}
-          className="h-11 px-6 rounded-xl"
+          className="h-11 w-full rounded-xl px-6 md:w-auto"
           leftIcon={<Filter size={18} />}
           onClick={() => setShowFilters(!showFilters)}
         >
@@ -164,7 +164,7 @@ export default function CustomerAnalysisPage() {
       {/* Painel de Filtros Avançados */}
       {showFilters && (
         <Card className="border-red-600/20 bg-red-600/5 animate-in slide-in-from-top-2 duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-4 items-end">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Risco de Churn</label>
               <select 

@@ -10,6 +10,8 @@ export interface DashboardStats {
   vendasMensais: Array<{
     mes: string;
     total: number;
+    quantidade: number;
+    faturamento: number;
   }>;
   vendasCategoria: Array<{
     categoria: string;
@@ -54,6 +56,8 @@ export interface CustomerAnalysisParams {
   risco?: string;
   classificacao?: string;
   isOutlier?: string;
+  page?: string;
+  limit?: string;
 }
 
 export const dashboardService = {

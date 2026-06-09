@@ -1,4 +1,58 @@
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: kickhub-backend
+    restart: unless-stopped
+    depends_on:
+      - db-transacional
+      - db-bi
+    environment:
+      DATABASE_URL: postgresql://sneakers_user:sneakers2026@db-transacional:5432/sneakers_db?schema=public
+      DATABASE_BI_URL: postgresql://bi_user:bi2026@db-bi:5432/sneakers_bi?schema=public
+      PORT: 3001
+      NODE_ENV: development
+      FRONTEND_URL: http://localhost:3000
+      OLTP_HOST: db-transacional
+      OLTP_PORT: 5432
+      OLTP_DB: sneakers_db
+      OLTP_USER: sneakers_user
+      OLTP_PASSWORD: sneakers2026
+      BI_HOST: db-bi
+      BI_PORT: 5432
+      BI_DB: sneakers_bi
+      BI_USER: bi_user
+      BI_PASSWORD: bi2026
+      PYTHON_SEEDER_EXECUTABLE: /opt/kickhub-bi-seeder-venv/bin/python
+      PYTHON_ETL_EXECUTABLE: /opt/kickhub-bi-etl-venv/bin/python
+      PYTHON_ML_EXECUTABLE: /opt/kickhub-bi-ml-venv/bin/python
+      PYTHON_RELATORIOS_EXECUTABLE: /opt/kickhub-bi-relatorios-venv/bin/python
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - backend-node-modules:/app/node_modules
+      - ./bi:/bi
+    command: sh -c "npx prisma generate && npm run start:dev"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: kickhub-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
+      - frontend-next:/app/.next
+    command: npm run dev -- --hostname 0.0.0.0
+
   db-transacional:
     image: postgres:16
     container_name: sneakers-oltp
@@ -26,6 +80,8 @@ services:
       - dados-bi:/var/lib/postgresql/data
 
 volumes:
+  backend-node-modules:
+  frontend-node-modules:
+  frontend-next:
   dados-transacional:
   dados-bi:
- 

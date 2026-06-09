@@ -15,10 +15,13 @@ import {
   User,
   Users,
   FileText,
+  Menu,
+  X,
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import api from '@/services/api';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -50,6 +53,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     const usuarioSalvo = localStorage.getItem('kickhub_usuario');
@@ -81,16 +85,50 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-neutral-800 bg-[#0f0f0f] transition-transform">
+    <>
+    <button
+      type="button"
+      onClick={() => setIsMobileOpen(true)}
+      className="fixed left-4 top-4 z-40 flex h-11 w-11 items-center justify-center rounded-xl border border-neutral-800 bg-[#1a1a1a]/95 text-white shadow-xl backdrop-blur transition-colors hover:bg-neutral-900 lg:hidden"
+      aria-label="Abrir menu"
+      title="Abrir menu"
+    >
+      <Menu size={22} />
+    </button>
+
+    {isMobileOpen && (
+      <button
+        type="button"
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+        onClick={() => setIsMobileOpen(false)}
+        aria-label="Fechar menu"
+      />
+    )}
+
+    <aside className={cn(
+      "fixed left-0 top-0 z-50 h-dvh w-72 max-w-[85vw] border-r border-neutral-800 bg-[#0f0f0f] transition-transform duration-200 lg:z-40 lg:h-screen lg:w-64 lg:max-w-none lg:translate-x-0",
+      isMobileOpen ? "translate-x-0" : "-translate-x-full"
+    )}>
       <div className="flex h-full flex-col px-3 py-6">
         {/* Logo */}
-        <div className="mb-10 flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
-            <Footprints size={20} />
+        <div className="mb-8 flex items-center justify-between gap-2 px-2 lg:mb-10">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]">
+              <Footprints size={20} />
+            </div>
+            <span className="whitespace-nowrap pr-1 text-xl font-black leading-none tracking-tight text-white uppercase italic">
+              Kick<span className="text-red-600">Hub</span>
+            </span>
           </div>
-          <span className="text-xl font-black tracking-tight text-white uppercase italic">
-            Kick<span className="text-red-600">Hub</span>
-          </span>
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(false)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-white lg:hidden"
+            aria-label="Fechar menu"
+            title="Fechar menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -121,6 +159,7 @@ export default function Sidebar() {
               <Link
                 key={item.href + index}
                 href={item.href}
+                onClick={() => setIsMobileOpen(false)}
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
                   isActive
@@ -137,6 +176,7 @@ export default function Sidebar() {
 
         {/* User Profile Section at Bottom */}
         <div className="mt-auto pt-6 border-t border-neutral-800/50">
+          <ThemeToggle className="mb-3 w-full" />
           <div className="flex items-center justify-between rounded-2xl bg-neutral-900/40 p-3 border border-neutral-800/50 group">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-800 text-xs font-black text-white border border-neutral-700 shadow-inner group-hover:border-red-600/50 transition-colors">
@@ -162,5 +202,6 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

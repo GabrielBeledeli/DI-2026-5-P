@@ -40,16 +40,16 @@ export default function NovoProdutoPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">
+      <div className="min-w-0">
+        <h1 className="break-words text-2xl font-bold text-white tracking-tight sm:text-3xl">
           Novo Produto
         </h1>
-        <p className="text-neutral-500">
+        <p className="break-words text-sm text-neutral-500 sm:text-base">
           Preencha os dados abaixo para cadastrar um novo sneaker no catálogo.
         </p>
       </div>
 
-      <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-8 shadow-sm">
+      <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-4 shadow-sm sm:p-8">
         <ProdutoForm
           categorias={categorias}
           onSubmit={handleSubmit}
