@@ -62,11 +62,11 @@ export default function NovaVendaPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+      <div className="min-w-0">
+        <h1 className="break-words text-2xl font-bold text-white tracking-tight uppercase italic sm:text-3xl">
           Nova <span className="text-red-600">Venda</span>
         </h1>
-        <p className="text-neutral-500">Registre uma nova venda selecionando o cliente e os produtos.</p>
+        <p className="break-words text-sm text-neutral-500 sm:text-base">Registre uma nova venda selecionando o cliente e os produtos.</p>
       </div>
 
       <VendaForm 

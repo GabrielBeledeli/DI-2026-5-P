@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
+import { Resolver, useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Trash2, Plus, Search, ShoppingCart, Check, X, Minus, ArrowRight } from 'lucide-react';
@@ -23,6 +23,8 @@ const vendaSchema = z.object({
     nome: z.string().optional(),
     marca: z.string().optional(),
     tamanho: z.string().optional(),
+    cor: z.string().optional(),
+    genero: z.string().optional(),
     estoque: z.number().optional(),
   })).min(1, 'Adicione pelo menos um item'),
 });
@@ -56,7 +58,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
     getValues,
     formState: { errors },
   } = useForm<VendaFormData>({
-    resolver: zodResolver(vendaSchema),
+    resolver: zodResolver(vendaSchema) as unknown as Resolver<VendaFormData>,
     defaultValues: {
       clienteId: 0,
       status: 'PENDENTE_PAGAMENTO',
@@ -146,8 +148,8 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
         nome: produto.nome,
         marca: produto.marca,
         tamanho: produto.tamanho,
-        cor: (produto as any).cor,
-        genero: (produto as any).genero,
+        cor: produto.cor,
+        genero: produto.genero,
         estoque: Number(produto.estoque)
       });
     }
@@ -169,7 +171,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-full pb-32">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-full space-y-6 pb-56 sm:pb-40">
       {/* 1. CLIENTE */}
       <Card title="1. Identificação do Cliente">
         <Autocomplete
@@ -196,7 +198,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
             <input
               type="text"
               placeholder="Pesquise o produto (Nome, Marca, Cor, Gênero, Tamanho)..."
-              className="w-full bg-transparent py-4 pl-12 pr-4 text-white outline-none placeholder:text-neutral-600 font-medium"
+              className="w-full bg-transparent py-4 pl-12 pr-10 text-sm font-medium text-white outline-none placeholder:text-neutral-600 sm:pr-4 sm:text-base"
               value={productSearch}
               onFocus={() => setIsProductDropdownOpen(true)}
               onChange={(e) => {
@@ -217,8 +219,8 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
 
           {/* PAINEL FLUTUANTE (POP-UP) */}
           {isProductDropdownOpen && (
-            <div className="absolute left-0 right-0 z-50 mt-2 max-h-[450px] overflow-hidden rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 duration-150">
-              <div className="overflow-y-auto max-h-[450px]">
+            <div className="absolute left-0 right-0 z-50 mt-2 max-h-[70vh] overflow-hidden rounded-xl border border-neutral-800 bg-[#0a0a0a] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 duration-150 sm:max-h-[450px]">
+              <div className="max-h-[70vh] overflow-y-auto sm:max-h-[450px]">
                 <Table 
                   headers={['ID', 'Nome', 'Marca', 'Categoria', 'Cor', 'Gênero', 'Tam', 'Preço', 'Estoque']}
                   className="!mb-0"
@@ -284,7 +286,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
                 {fields.map((field, index) => (
                   <TableRow key={field.id} className="border-b border-neutral-900 last:border-0 hover:bg-neutral-900/40 transition-colors">
                     <TableCell>
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-3 sm:gap-6">
                         {/* MARCA À ESQUERDA */}
                         <div className="flex flex-col min-w-[70px]">
                           <span className="text-xs font-black text-red-500 uppercase tracking-tighter">
@@ -359,8 +361,8 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
               </Table>
             </div>
             
-            <div className="flex justify-between items-center px-8 py-6 rounded-2xl bg-neutral-900 border-2 border-neutral-800 border-dashed">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-4 rounded-2xl border-2 border-dashed border-neutral-800 bg-neutral-900 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-6">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-red-600/10 flex items-center justify-center">
                   <ShoppingCart size={20} className="text-red-600" />
                 </div>
@@ -369,7 +371,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
                   <p className="text-sm font-medium text-neutral-400 mt-1">Soma de todos os {watchedItens.length} itens selecionados</p>
                 </div>
               </div>
-              <span className="text-4xl font-black text-white tracking-tighter">{formatCurrency(total)}</span>
+              <span className="break-words text-3xl font-black tracking-tighter text-white sm:text-4xl">{formatCurrency(total)}</span>
             </div>
           </div>
         ) : (
@@ -395,11 +397,11 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
 
       {/* 4. STATUS DA VENDA */}
       <Card title="4. Finalização e Status">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="relative cursor-pointer group">
             <input type="radio" {...register('status')} value="PENDENTE_PAGAMENTO" className="peer sr-only" />
             <div className={clsx(
-              "flex h-24 flex-col items-center justify-center rounded-2xl border-2 bg-[#0f0f0f] transition-all duration-300",
+              "flex min-h-24 flex-col items-center justify-center rounded-2xl border-2 bg-[#0f0f0f] px-3 py-4 text-center transition-all duration-300",
               "border-neutral-800 text-neutral-500 group-hover:border-neutral-700",
               "peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-500 peer-checked:shadow-[0_0_20px_rgba(245,158,11,0.15)]"
             )}>
@@ -411,7 +413,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
           <label className="relative cursor-pointer group">
             <input type="radio" {...register('status')} value="CONCLUIDA" className="peer sr-only" />
             <div className={clsx(
-              "flex h-24 flex-col items-center justify-center rounded-2xl border-2 bg-[#0f0f0f] transition-all duration-300",
+              "flex min-h-24 flex-col items-center justify-center rounded-2xl border-2 bg-[#0f0f0f] px-3 py-4 text-center transition-all duration-300",
               "border-neutral-800 text-neutral-500 group-hover:border-neutral-700",
               "peer-checked:border-green-500 peer-checked:bg-green-500/10 peer-checked:text-green-500 peer-checked:shadow-[0_0_20px_rgba(34,197,94,0.15)]"
             )}>
@@ -423,14 +425,14 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
       </Card>
 
       {/* RODAPÉ ESTRUTURAL */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#050505]/95 backdrop-blur-2xl border-t border-neutral-800 p-8 flex items-center justify-center shadow-[0_-10px_50px_rgba(0,0,0,0.8)]">
-        <div className="max-w-6xl w-full flex items-center justify-between">
-          <div className="flex items-center gap-6">
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center border-t border-neutral-800 bg-[#050505]/95 p-4 shadow-[0_-10px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl sm:p-6 lg:left-64 lg:p-8">
+        <div className="flex w-full max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-6">
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] leading-none mb-2">Total Final do Pedido</span>
-              <p className="text-5xl font-black text-white leading-none tracking-tighter">{formatCurrency(total)}</p>
+              <p className="break-words text-2xl font-black leading-none tracking-tighter text-white sm:text-4xl lg:text-5xl">{formatCurrency(total)}</p>
             </div>
-            <ArrowRight className="text-neutral-800" size={32} />
+            <ArrowRight className="hidden text-neutral-800 sm:block" size={32} />
             <div className="hidden md:flex flex-col">
               <span className="text-[10px] font-black text-neutral-600 uppercase tracking-widest leading-none mb-1">Status Selecionado</span>
               <p className={clsx(
@@ -441,13 +443,13 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
               </p>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:gap-4">
             <Button 
               type="button" 
               variant="outline" 
               size="lg" 
               onClick={() => window.history.back()} 
-              className="h-16 px-10 border-neutral-800 hover:bg-neutral-900 text-neutral-500 font-black uppercase tracking-tighter"
+              className="h-12 px-4 border-neutral-800 hover:bg-neutral-900 text-neutral-500 font-black uppercase tracking-tighter sm:h-16 sm:px-10"
             >
               Cancelar
             </Button>
@@ -455,7 +457,7 @@ export default function VendaForm({ clientes, produtos, onSubmit, isLoading, ini
               type="submit" 
               isLoading={isLoading} 
               size="lg" 
-              className="h-16 px-16 bg-red-600 hover:bg-red-700 text-white font-black text-xl shadow-[0_0_40px_rgba(220,38,38,0.4)] transition-all active:scale-95"
+              className="h-12 px-4 bg-red-600 hover:bg-red-700 text-white font-black text-sm shadow-[0_0_40px_rgba(220,38,38,0.4)] transition-all active:scale-95 sm:h-16 sm:px-10 sm:text-lg lg:px-16 lg:text-xl"
             >
               {submitLabel}
             </Button>

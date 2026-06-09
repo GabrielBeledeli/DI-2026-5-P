@@ -15,8 +15,8 @@ interface TableProps {
 
 export default function Table({ headers, children, className, isLoading }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-neutral-800">
-      <table className={cn("w-full text-left text-sm text-neutral-400", className)}>
+    <div className="w-full max-w-full overflow-x-auto rounded-lg border border-neutral-800">
+      <table className={cn("min-w-full table-auto text-left text-sm text-neutral-400", className)}>
         <thead className="bg-[#0f0f0f] text-xs font-semibold uppercase text-neutral-500">
           <tr>
             {headers.map((header, index) => {
@@ -27,7 +27,7 @@ export default function Table({ headers, children, className, isLoading }: Table
                 <th 
                   key={index} 
                   className={cn(
-                    "px-6 py-4",
+                    "whitespace-nowrap px-4 py-3 sm:px-6 sm:py-4",
                     align === 'center' && "text-center",
                     align === 'right' && "text-right"
                   )}
@@ -43,7 +43,7 @@ export default function Table({ headers, children, className, isLoading }: Table
             Array.from({ length: 5 }).map((_, i) => (
               <tr key={i} className="animate-pulse">
                 {headers.map((_, j) => (
-                  <td key={j} className="px-6 py-4">
+                  <td key={j} className="px-4 py-3 sm:px-6 sm:py-4">
                     <div className="h-4 w-full rounded bg-neutral-800"></div>
                   </td>
                 ))}
@@ -72,7 +72,7 @@ export function TableCell({
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn("whitespace-nowrap px-6 py-4", className)} {...props}>
+    <td className={cn("whitespace-nowrap px-4 py-3 sm:px-6 sm:py-4", className)} {...props}>
       {children}
     </td>
   );

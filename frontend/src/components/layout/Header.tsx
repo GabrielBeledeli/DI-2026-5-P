@@ -49,14 +49,14 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed right-0 top-0 z-30 flex h-16 w-[calc(100%-16rem)] items-center justify-end border-b border-neutral-800 bg-[#0f0f0f]/80 px-8 backdrop-blur-md">
+    <header className="fixed right-0 top-0 z-30 flex h-16 w-full items-center justify-end border-b border-neutral-800 bg-[#0f0f0f]/80 px-4 backdrop-blur-md sm:px-6 lg:w-[calc(100%-16rem)] lg:px-8">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-1 text-neutral-300">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-800 text-xs font-semibold text-white">
             {usuario ? iniciais : <User size={18} />}
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-medium text-white">{usuario?.nome ?? 'Perfil'}</span>
+          <div className="hidden min-w-0 flex-col leading-tight sm:flex">
+            <span className="max-w-40 truncate text-sm font-medium text-white">{usuario?.nome ?? 'Perfil'}</span>
             <span className="text-xs text-neutral-500">{usuario?.perfil ?? 'Usuário'}</span>
           </div>
         </div>

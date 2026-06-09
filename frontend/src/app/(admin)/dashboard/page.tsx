@@ -321,14 +321,26 @@ export default function DashboardPage() {
     return 'default';
   };
 
+  const formatCurrency = (value?: number | string) => {
+    const numericValue =
+      typeof value === 'string' && value.includes(',')
+        ? Number(value.replace(/\./g, '').replace(',', '.'))
+        : Number(value ?? 0);
+
+    return `R$ ${numericValue.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-bold text-white tracking-tight uppercase italic sm:text-3xl">
             Dashboard {isGestor ? <span className="text-red-600">Estratégico</span> : <span className="text-red-600">Individual</span>}
           </h1>
-          <p className="text-neutral-500">
+          <p className="break-words text-sm text-neutral-500 sm:text-base">
             {isGestor 
               ? 'Inteligência de negócios, clientes e performance comercial.' 
               : 'Seus indicadores de vendas e performance.'}
@@ -340,12 +352,12 @@ export default function DashboardPage() {
           )}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {isGestor && (
             <Button
               variant="outline"
               size="sm"
-              className="border-red-600/30 text-red-500 hover:bg-red-600/10"
+              className="w-full border-red-600/30 text-red-500 hover:bg-red-600/10 sm:w-auto"
               leftIcon={<RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />}
               onClick={handleRefreshIntelligence}
               disabled={refreshing}
@@ -358,6 +370,7 @@ export default function DashboardPage() {
             size="sm"
             leftIcon={<Filter size={16} />}
             onClick={() => setShowFilters(!showFilters)}
+            className="w-full sm:w-auto"
           >
             Filtros
           </Button>
@@ -366,12 +379,12 @@ export default function DashboardPage() {
 
       {showFilters && (
         <Card className="border-red-600/20 bg-red-600/5">
-          <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
             {isGestor && (
               <label className="flex flex-col gap-1.5 text-sm text-neutral-400">
                 Vendedor
                 <select
-                  className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                  className="h-10 w-full rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
                   value={vendedorFilter}
                   onChange={(e) => setVendedorFilter(e.target.value)}
                 >
@@ -387,7 +400,7 @@ export default function DashboardPage() {
               Data inicial
               <input
                 type="date"
-                className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
                 value={dataInicio}
                 onChange={(e) => setDataInicio(e.target.value)}
               />
@@ -397,7 +410,7 @@ export default function DashboardPage() {
               Data final
               <input
                 type="date"
-                className="h-10 rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
+                className="h-10 w-full rounded-lg border border-neutral-800 bg-[#1a1a1a] px-3 text-sm text-white focus:border-red-600 focus:outline-none"
                 value={dataFim}
                 onChange={(e) => setDataFim(e.target.value)}
               />
@@ -411,17 +424,17 @@ export default function DashboardPage() {
       )}
 
       {/* Grid de Cards de Resumo */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
         {isGestor ? (
           <>
             <SummaryCard 
               title="Faturamento" 
-              value={`R$ ${stats?.resumo.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} 
+              value={formatCurrency(stats?.resumo.faturamentoTotal)} 
               icon={<DollarSign className="text-red-500" />} 
             />
             <SummaryCard 
               title="Ticket Médio" 
-              value={`R$ ${stats?.resumo.ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+              value={formatCurrency(stats?.resumo.ticketMedio)} 
               icon={<RefreshCw className="text-purple-500" />} 
             />
             <SummaryCard 
@@ -441,7 +454,7 @@ export default function DashboardPage() {
             />
             <SummaryCard 
               title="CLV Médio" 
-              value={`R$ ${stats?.biEstrategico?.clvMedio || '0'}`} 
+              value={formatCurrency(stats?.biEstrategico?.clvMedio)} 
               icon={<Activity className="text-cyan-500" />} 
             />
           </>
@@ -454,25 +467,25 @@ export default function DashboardPage() {
             />
             <SummaryCard 
               title="Meu Faturamento" 
-              value={`R$ ${stats?.resumo.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} 
+              value={formatCurrency(stats?.resumo.faturamentoTotal)} 
               icon={<DollarSign className="text-red-500" />} 
             />
             <SummaryCard 
               title="Meu Ticket Médio" 
-              value={`R$ ${stats?.resumo.ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+              value={formatCurrency(stats?.resumo.ticketMedio)} 
               icon={<Activity className="text-blue-500" />} 
             />
           </>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         {/* Gráfico de Evolução (Dual Axis) */}
         <Card 
           title={isGestor ? "Evolução Faturamento & Vendas" : "Minha Evolução Faturamento & Vendas"} 
           className={isGestor ? "lg:col-span-3" : "lg:col-span-2"}
         >
-          <div className="h-80">
+          <div className="h-72 sm:h-80">
             <Line data={lineData} options={{
               ...lineOptions,
               plugins: {
@@ -498,7 +511,7 @@ export default function DashboardPage() {
         {/* Lado Direito Dinâmico (Vendedor) */}
         {!isGestor && (
           <Card title="Faturamento por Categoria">
-            <div className="h-80">
+            <div className="h-72 sm:h-80">
               <Bar data={categoryBarData} options={categoryChartOptions} />
             </div>
           </Card>
@@ -507,9 +520,9 @@ export default function DashboardPage() {
 
       {/* NOVO GRID GESTOR: Categoria e Risco Lado a Lado */}
       {isGestor && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
           <Card title="Faturamento por Categoria" className="lg:col-span-2">
-            <div className="h-80">
+            <div className="h-72 sm:h-80">
               <Bar data={categoryBarData} options={{
                 ...categoryChartOptions,
                 plugins: {
@@ -525,14 +538,14 @@ export default function DashboardPage() {
             </div>
           </Card>
           <Card title="Distribuição de Risco">
-            <div className="h-80">
+            <div className="h-72 sm:h-80">
               <Bar data={riskBarData} options={riskChartOptions} />
             </div>
           </Card>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         {/* Tabela de Top Clientes */}
         <Card title="Melhores Clientes (RFM Score)" className="lg:col-span-2">
           <Table headers={['Cliente', 'RFM Score', 'Risco Churn', 'Total Gasto']}>
@@ -596,12 +609,12 @@ export default function DashboardPage() {
 
 function SummaryCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-5 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-neutral-800 bg-[#1a1a1a] p-4 shadow-sm sm:p-5">
       <div className="flex items-center gap-3 mb-3">
         <div className="rounded-lg bg-[#0f0f0f] p-2">{icon}</div>
         <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{title}</h3>
       </div>
-      <p className="text-xl font-bold text-white tracking-tight">{value}</p>
+      <p className="break-words text-lg font-bold text-white tracking-tight sm:text-xl">{value}</p>
     </div>
   );
 }

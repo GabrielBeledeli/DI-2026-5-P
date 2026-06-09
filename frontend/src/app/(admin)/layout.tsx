@@ -9,8 +9,8 @@ export default function AdminLayout({
   return (
     <>
       <Sidebar />
-      <div className="pl-64">
-        <main className="min-h-screen px-8 py-10">
+      <div className="min-w-0 lg:pl-64">
+        <main className="min-h-screen px-4 pb-6 pt-20 sm:px-6 lg:px-8 lg:py-10">
           {children}
         </main>
       </div>

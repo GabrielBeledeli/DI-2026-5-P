@@ -4,10 +4,11 @@ import { cn } from '@/lib/utils';
 interface BadgeProps {
   children: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'outline';
+  outline?: boolean;
   className?: string;
 }
 
-export default function Badge({ children, variant = 'default', className }: BadgeProps) {
+export default function Badge({ children, variant = 'default', outline = false, className }: BadgeProps) {
   const variants = {
     default: 'bg-neutral-800 text-neutral-300',
     success: 'bg-green-900/30 text-green-400 border border-green-900/50',
@@ -21,6 +22,7 @@ export default function Badge({ children, variant = 'default', className }: Badg
     <span className={cn(
       "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
       variants[variant],
+      outline && variant !== 'outline' && "border border-current/30 bg-transparent",
       className
     )}>
       {children}

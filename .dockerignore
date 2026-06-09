@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/venv
+**/__pycache__
+*.log
+frontend/out
+bi/python/relatorios/arquivos/*.pdf
+bi/python/relatorios/arquivos/*.png

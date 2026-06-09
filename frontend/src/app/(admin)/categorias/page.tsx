@@ -111,16 +111,16 @@ export default function CategoriasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="break-words text-2xl font-bold text-white tracking-tight uppercase italic sm:text-3xl">
             Listagem <span className="text-red-600">Categorias</span>
           </h1>
-          <p className="text-neutral-500">
+          <p className="break-words text-sm text-neutral-500 sm:text-base">
             Organize seus produtos por categorias.
           </p>
         </div>
-        <Button leftIcon={<Plus size={18} />} onClick={() => handleOpenModal()}>
+        <Button className="w-full sm:w-auto" leftIcon={<Plus size={18} />} onClick={() => handleOpenModal()}>
           Nova Categoria
         </Button>
       </div>
