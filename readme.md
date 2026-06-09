@@ -83,7 +83,7 @@ Execute os comandos abaixo para cada módulo de BI para garantir que as dependê
 # Repita este processo para as pastas: seeder, etl_oltp_to_bi, ml_churn_rfm, relatorios
 cd bi/python/[NOME_DA_PASTA]
 python -m venv venv
-# Ative a venv (Windows: .\venv\Scripts\activate | Linux: source venv/bin/activate)
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -109,7 +109,7 @@ Com os ambientes prontos e o seeder executado, o controle agora é total via int
 | Perfil | E-mail | Senha |
 | :--- | :--- | :--- |
 | **Gestor** | `gabriel@kickhub.com` | `gestor123` |
-| **Gestor** | `nicolas@kickhub.com` | `gestor123` |
+| **Gestor** | `nicolas@kickhub.com` | `vendedor123` |
 | **Vendedor** | `vinicius@kickhub.com` | `vendedor123` |
 | **Vendedor** | `alisson@kickhub.com` | `vendedor123` |
 
