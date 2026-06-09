@@ -72,39 +72,81 @@ O frontend estará disponível em `http://localhost:3000`.
 
 ---
 
-### 📊 Parte 2: Motores de BI & Inteligência Artificial
+### 📊 Parte 2: Configuração dos Motores de BI & IA (Obrigatório)
 
-Agora vamos preparar os motores de análise. **Você só precisa fazer este passo uma única vez** para configurar o ambiente. Depois, poderá atualizar tudo com um clique dentro do sistema!
+Siga esta sequência exata de comandos no seu terminal para preparar e rodar a inteligência do sistema. **Não pule nenhum passo.**
 
-#### 1. Preparar Ambientes Python (Venv)
-Execute os comandos abaixo para cada módulo de BI para garantir que as dependências estejam prontas:
+---
 
+#### 1️⃣ Passo: Popular o Banco Transacional (Seeder)
 ```bash
-# Repita este processo para as pastas: seeder, etl_oltp_to_bi, ml_churn_rfm, relatorios
-cd bi/python/[NOME_DA_PASTA]
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-#### 2. Popular a Base de Dados (Seeder)
-Para que o sistema tenha produtos, usuários e um histórico de vendas para analisar, você deve rodar o seeder inicial:
-
-```bash
+# Entre na pasta
 cd bi/python/seeder
-# Garanta que a venv está ativa
+
+# Prepare o ambiente
+python -m venv venv
+.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
+
+# Instale e Rode
+pip install -r requirements.txt
 python seeder.py
 ```
 
-#### 3. Sincronização em Tempo Real 🚀
-Com os ambientes prontos e o seeder executado, o controle agora é total via interface:
-1. Acesse o sistema como **Gestor** (`gabriel@kickhub.com` / `gestor123`).
-2. Vá ao **Dashboard** e clique no botão **"Atualizar BI"**.
-3. O sistema orquestra automaticamente o **ETL** (sincronização) e o **ML** (IA), atualizando todos os indicadores instantaneamente.
+#### 2️⃣ Passo: Sincronizar o Banco de BI (ETL)
+```bash
+# Saia da pasta anterior e entre na do ETL
+cd ../etl_oltp_to_bi
+
+# Prepare o ambiente
+python -m venv venv
+.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
+
+# Instale e Rode
+pip install -r requirements.txt
+python etl_pipeline.py
+```
+
+#### 3️⃣ Passo: Gerar a Inteligência de IA (ML Churn & RFM)
+```bash
+# Saia da pasta anterior e entre na do ML
+cd ../ml_churn_rfm
+
+# Prepare o ambiente
+python -m venv venv
+.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
+
+# Instale e Rode
+pip install -r requirements.txt
+python ml_churn_rfm.py
+```
+
+#### 4️⃣ Passo: Preparar o Motor de Relatórios PDF
+```bash
+# Saia da pasta anterior e entre na de Relatórios
+cd ../relatorios
+
+# Prepare o ambiente
+python -m venv venv
+.\venv\Scripts\activate  # No Linux/Mac: source venv/bin/activate
+
+# Instale os requisitos (Pronto para uso via sistema)
+pip install -r requirements.txt
+```
+
+---
+
+#### 🎯 Resultado Final
+Após seguir os 4 blocos acima, o sistema estará com "as luzes acesas". 
+1. Acesse `http://localhost:3000` como **Gestor** (`gabriel@kickhub.com` / `gestor123`).
+2. Tudo estará carregado: Dashboards, Scores de Clientes e Relatórios.
+
+> **Dica:** Daqui para frente, você não precisa mais voltar ao terminal. Sempre que quiser dados novos, use o botão **"Atualizar BI"** dentro do próprio Dashboard.
 
 ---
 
 ## 🔐 Credenciais de Acesso (Padrão)
+
+Utilize os seguintes usuários após a execução do seeder:
 
 | Perfil | E-mail | Senha |
 | :--- | :--- | :--- |
