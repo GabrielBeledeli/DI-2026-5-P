@@ -62,7 +62,7 @@ for nome in CATEGORIAS:
 cur.execute("TRUNCATE usuarios CASCADE")
 USUARIOS_SISTEMA = [
     {'nome': 'Gabriel Beledeli Hul', 'email': 'gabriel@kickhub.com', 'senha': SENHA_ADMIN_HASH, 'perfil': 'GESTOR'},
-    {'nome': 'Nicolas Miguel', 'email': 'nicolas@kickhub.com', 'senha': SENHA_ADMIN_HASH, 'perfil': 'VENDEDOR'},
+    {'nome': 'Nicolas Miguel', 'email': 'nicolas@kickhub.com', 'senha': SENHA_VENDEDOR_HASH, 'perfil': 'VENDEDOR'},
     {'nome': 'Vinicius Buskievicz', 'email': 'vinicius@kickhub.com', 'senha': SENHA_VENDEDOR_HASH, 'perfil': 'VENDEDOR'},
     {'nome': 'Alisson Eraldo', 'email': 'alisson@kickhub.com', 'senha': SENHA_VENDEDOR_HASH, 'perfil': 'VENDEDOR'}
 ]
