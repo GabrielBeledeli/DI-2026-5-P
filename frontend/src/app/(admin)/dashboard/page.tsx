@@ -28,12 +28,14 @@ import {
   LineElement,
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import Card from '@/components/ui/Card';
 import Table, { TableRow, TableCell } from '@/components/ui/Table';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { dashboardService, DashboardStats } from '@/services/dashboardService';
 import { usuarioService, Vendedor } from '@/services/usuarioService';
+import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 ChartJS.register(
   CategoryScale,
@@ -44,7 +46,8 @@ ChartJS.register(
   Legend,
   ArcElement,
   PointElement,
-  LineElement
+  LineElement,
+  ChartDataLabels
 );
 
 export default function DashboardPage() {
@@ -52,6 +55,8 @@ export default function DashboardPage() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  
+  const [refreshing, setRefreshing] = useState(false);
   
   // Filtros
   const [showFilters, setShowFilters] = useState(false);
@@ -78,6 +83,20 @@ export default function DashboardPage() {
       console.error('Erro ao carregar dados do dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshIntelligence = async () => {
+    try {
+      setRefreshing(true);
+      await dashboardService.refreshIntelligence();
+      await fetchStats(); // Recarrega os dados do dashboard após o ML processar
+      showSuccessAlert('Sucesso', 'Inteligência de dados (ETL + ML) sincronizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao sincronizar inteligência:', error);
+      showErrorAlert(error, 'Falha ao sincronizar inteligência de dados.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -157,6 +176,9 @@ export default function DashboardPage() {
         titleColor: '#fff',
         borderColor: '#2a2a2a',
         borderWidth: 1,
+      },
+      datalabels: {
+        display: false,
       }
     },
     scales: {
@@ -206,11 +228,25 @@ export default function DashboardPage() {
         titleColor: '#fff',
         borderColor: '#2a2a2a',
         borderWidth: 1,
+      },
+      datalabels: {
+        color: '#fff',
+        anchor: 'end' as const,
+        align: 'right' as const,
+        offset: 8,
+        font: { size: 10, weight: 'bold' as const },
+        formatter: (value: number) => {
+          if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
+          if (value >= 1000) return `R$ ${(value / 1000).toFixed(1)}k`;
+          return `R$ ${value.toLocaleString('pt-BR')}`;
+        }
       }
     },
     scales: {
       x: {
         grid: { color: '#2a2a2a', drawBorder: false },
+        // Aumenta o máximo do eixo X em 20% para dar espaço ao rótulo lateral
+        suggestedMax: Math.max(...(stats?.vendasCategoria.map(v => v.faturamento) || [0])) * 1.2,
         ticks: { 
           color: '#737373',
           callback: (value: any) => `R$ ${value >= 1000 ? (value/1000) + 'k' : value}`
@@ -228,15 +264,52 @@ export default function DashboardPage() {
     'Crítico': '#dc2626'
   };
 
-  const riskPieData = {
-    labels: stats?.biEstrategico?.distribuicaoRisco?.map(r => r.label) || [],
+  const riskOrder = ['Baixo', 'Médio', 'Alto', 'Crítico'];
+  
+  // Ordena os dados de risco conforme a ordem definida
+  const sortedRiskData = [...(stats?.biEstrategico?.distribuicaoRisco || [])].sort((a, b) => {
+    return riskOrder.indexOf(a.label) - riskOrder.indexOf(b.label);
+  });
+
+  const riskBarData = {
+    labels: sortedRiskData.map(r => r.label),
     datasets: [
       {
-        data: stats?.biEstrategico?.distribuicaoRisco?.map(r => r.valor) || [],
-        backgroundColor: stats?.biEstrategico?.distribuicaoRisco?.map(r => riskColorMap[r.label] || '#737373') || [], 
-        borderWidth: 0,
+        label: 'Nº de Clientes',
+        data: sortedRiskData.map(r => r.valor),
+        backgroundColor: sortedRiskData.map(r => riskColorMap[r.label] || '#737373'), 
+        borderRadius: 4,
       },
     ],
+  };
+
+  const riskChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1a1a',
+        titleColor: '#fff',
+        borderColor: '#2a2a2a',
+        borderWidth: 1,
+        callbacks: {
+          label: (context: any) => `Clientes: ${context.raw}`
+        }
+      },
+      datalabels: {
+        color: '#fff',
+        anchor: 'end' as const,
+        align: 'top' as const,
+        offset: 4,
+        font: { size: 11, weight: 'bold' as const },
+        formatter: (value: any) => value
+      }
+    },
+    scales: {
+      y: { grid: { color: '#2a2a2a' }, ticks: { color: '#737373' } },
+      x: { grid: { display: false }, ticks: { color: '#a3a3a3' } }
+    }
   };
 
   const getRiskBadgeVariant = (risk: string) => {
@@ -260,9 +333,26 @@ export default function DashboardPage() {
               ? 'Inteligência de negócios, clientes e performance comercial.' 
               : 'Seus indicadores de vendas e performance.'}
           </p>
+          {stats?.biEstrategico?.ultimaCarga && (
+            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest mt-1">
+              Última Atualização em: {new Date(stats.biEstrategico.ultimaCarga).toLocaleString('pt-BR')}
+            </p>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
+          {isGestor && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-600/30 text-red-500 hover:bg-red-600/10"
+              leftIcon={<RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />}
+              onClick={handleRefreshIntelligence}
+              disabled={refreshing}
+            >
+              {refreshing ? "Atualizando BI..." : "Atualizar BI"}
+            </Button>
+          )}
           <Button
             variant={showFilters ? "secondary" : "outline"}
             size="sm"
@@ -383,7 +473,25 @@ export default function DashboardPage() {
           className={isGestor ? "lg:col-span-3" : "lg:col-span-2"}
         >
           <div className="h-80">
-            <Line data={lineData} options={lineOptions} />
+            <Line data={lineData} options={{
+              ...lineOptions,
+              plugins: {
+                ...lineOptions.plugins,
+                tooltip: {
+                  ...lineOptions.plugins.tooltip,
+                  callbacks: {
+                    label: (context: any) => {
+                      const label = context.dataset.label || '';
+                      const value = context.raw;
+                      if (label.includes('Faturamento')) {
+                        return `${label}: R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                      }
+                      return `${label}: ${value} vendas`;
+                    }
+                  }
+                }
+              }
+            }} />
           </div>
         </Card>
         
@@ -402,18 +510,23 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <Card title="Faturamento por Categoria" className="lg:col-span-2">
             <div className="h-80">
-              <Bar data={categoryBarData} options={categoryChartOptions} />
+              <Bar data={categoryBarData} options={{
+                ...categoryChartOptions,
+                plugins: {
+                  ...categoryChartOptions.plugins,
+                  tooltip: {
+                    ...categoryChartOptions.plugins.tooltip,
+                    callbacks: {
+                      label: (context: any) => `Faturamento: R$ ${context.raw.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                    }
+                  }
+                }
+              }} />
             </div>
           </Card>
           <Card title="Distribuição de Risco">
-            <div className="h-80 flex items-center justify-center">
-              <Pie 
-                data={riskPieData} 
-                options={{ 
-                  maintainAspectRatio: false,
-                  plugins: { legend: { position: 'bottom', labels: { color: '#a3a3a3' } } } 
-                }} 
-              />
+            <div className="h-80">
+              <Bar data={riskBarData} options={riskChartOptions} />
             </div>
           </Card>
         </div>
@@ -474,12 +587,6 @@ export default function DashboardPage() {
             {(!stats?.biEstrategico?.topChurn || stats.biEstrategico.topChurn.length === 0) && (
               <p className="text-xs text-neutral-500 text-center py-4">Nenhum cliente em risco iminente.</p>
             )}
-            <Link 
-              href="/dashboard/churn-report"
-              className="inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0f0f0f] border border-neutral-700 bg-transparent text-neutral-300 hover:bg-neutral-800 hover:text-white h-8 px-3 text-xs w-full mt-2"
-            >
-              Relatório Completo
-            </Link>
           </div>
         </Card>
       </div>

@@ -68,4 +68,3 @@ python etl_pipeline.py
 *   **Segurança:** Utiliza mapeamento de colunas dinâmico para garantir que os dados sejam inseridos na ordem correta, independente do esquema do banco.
 
 ---
-*Módulo desenvolvido pelo Core de Engenharia de Dados KickHub BI.*

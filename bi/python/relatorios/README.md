@@ -83,12 +83,16 @@ pip install -r requirements.txt
 ```
 
 ### 3. Gerar os Relatórios
-Com o ambiente ativo, execute o script principal:
+Com o ambiente ativo, execute um dos scripts para gerar o documento desejado:
+
 ```powershell
-python gerar_relatorios.py
+# Gerar Relatório Gerencial:
+python gerar_relatorio_gerencial.py
+
+# Gerar Relatório Estratégico:
+python gerar_relatorio_estrategico.py
 ```
 
 Os arquivos serão salvos automaticamente na pasta `/arquivos`.
 
 ---
-*Relatórios gerados pelo Motor de Inteligência KickHub BI.*

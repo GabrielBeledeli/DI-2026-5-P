@@ -1,98 +1,126 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🚀 KickHub API — Backend Core
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Bem-vindo à documentação técnica do **Backend do KickHub**. Este documento detalha a arquitetura, as tecnologias utilizadas e mapeia todos os endpoints da API para facilitar o entendimento e a manutenção do sistema.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🏗️ Arquitetura e Tecnologias
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+O backend foi construído seguindo os princípios de escalabilidade e modularidade, utilizando o framework **NestJS**.
 
-## Project setup
+### Stack Principal
+- **Framework:** [NestJS](https://nestjs.com/) (Node.js) - Arquitetura baseada em módulos, controllers e services.
+- **ORM:** [Prisma](https://www.prisma.io/) - Gerenciamento de banco de dados e Type Safety.
+- **Bancos de Dados (Estratégia Dupla):**
+  - **OLTP (PostgreSQL):** Banco transacional para o dia a dia (vendas, estoque, usuários).
+  - **BI (PostgreSQL):** Banco analítico otimizado para consultas pesadas e Machine Learning.
+- **Segurança:** 
+  - **Passport JWT:** Autenticação via tokens.
+  - **Cookies HttpOnly:** Proteção contra ataques XSS ao armazenar o token.
+  - **Guards Globais:** Todas as rotas são protegidas por padrão.
+- **Integração:** Módulo `child_process` para orquestração de scripts Python externos.
 
+---
+
+## 🔐 Segurança e Autenticação
+
+### Fluxo de Login
+1. O usuário envia credenciais para `/auth/login`.
+2. O servidor valida e gera um token JWT.
+3. O token é enviado de volta em um **Cookie HttpOnly**. Isso significa que o JavaScript do navegador não consegue ler o token, impedindo roubo de sessões.
+4. Para cada requisição subsequente, o `JwtAuthGuard` valida o cookie automaticamente.
+
+### Perfis de Acesso (RBAC)
+- **VENDEDOR:** Acesso às operações de balcão (vendas, clientes, produtos).
+- **GESTOR:** Acesso total, incluindo dashboards estratégicos e geração de relatórios Python.
+
+---
+
+## 🛰️ Mapeamento de Rotas (Endpoints)
+
+### 🔑 Módulo de Autenticação (`/auth`)
+| Método | Rota | Descrição | Acesso |
+|:--- | :--- | :--- | :--- |
+| `POST` | `/auth/login` | Valida credenciais e gera cookie de sessão | Público |
+| `POST` | `/auth/logout` | Limpa o cookie de sessão | Autenticado |
+| `GET` | `/auth/me` | Retorna os dados do usuário logado | Autenticado |
+
+### 📊 Módulo Dashboard & BI (`/dashboard`)
+*Orquestra a inteligência do negócio e a ponte com o Python.*
+
+| Método | Rota | Descrição | Acesso |
+|:--- | :--- | :--- | :--- |
+| `GET` | `/dashboard/stats` | Retorna KPIs, vendas mensais e faturamento | Autenticado |
+| `GET` | `/dashboard/report/managerial` | **Ponte Python:** Executa script de BI e retorna PDF Gerencial | **GESTOR** |
+| `GET` | `/dashboard/report/strategic` | **Ponte Python:** Executa script de ML e retorna PDF Estratégico | **GESTOR** |
+
+> **Nota Técnica:** Ao chamar os relatórios, o NestJS ativa o ambiente virtual (`venv`), executa o script Python, aguarda a geração do arquivo em disco e o envia como um `StreamableFile` para o frontend.
+
+### 👟 Módulo de Produtos (`/produtos`)
+| Método | Rota | Descrição | Acesso |
+|:--- | :--- | :--- | :--- |
+| `GET` | `/produtos` | Lista todos os produtos (suporta filtros/busca) | Autenticado |
+| `POST` | `/produtos` | Cadastro de novo sneaker (SKU único) | Autenticado |
+| `PATCH` | `/produtos/:id` | Atualiza dados ou estoque | Autenticado |
+| `DELETE` | `/produtos/:id` | Remove produto do catálogo | Autenticado |
+
+### 💰 Módulo de Vendas (`/vendas`)
+*Este módulo utiliza **Transações do Prisma** para garantir que a venda só seja concluída se o estoque for baixado com sucesso.*
+
+| Método | Rota | Descrição | Acesso |
+|:--- | :--- | :--- | :--- |
+| `GET` | `/vendas` | Histórico completo de vendas | Autenticado |
+| `POST` | `/vendas` | **Cria Venda:** Valida estoque, cria registro e baixa estoque | Autenticado |
+| `PATCH` | `/vendas/:id/cancelar` | Estorna a venda e devolve itens ao estoque | Autenticado |
+
+### 👥 Módulo de Clientes (`/clientes`)
+| Método | Rota | Descrição | Acesso |
+|:--- | :--- | :--- | :--- |
+| `GET` | `/clientes` | Listagem e busca de clientes | Autenticado |
+| `POST` | `/clientes` | Cadastro de novos clientes | Autenticado |
+
+### 🏷️ Módulo de Categorias (`/categorias`)
+| Método | Rota | Descrição | Acesso |
+|:--- | :--- | :--- | :--- |
+| `GET` | `/categorias` | Lista as categorias (Jordan, Dunk, etc.) | Autenticado |
+| `POST` | `/categorias` | Criação de novas categorias | Autenticado |
+
+---
+
+## 🛠️ Comandos Úteis (Desenvolvedor)
+
+### Gerenciamento de Banco (Prisma)
 ```bash
-$ npm install
+# Sincronizar banco com o schema atual
+npx prisma migrate dev
+
+# Abrir o visualizador de banco de dados (Prisma Studio)
+npx prisma studio
 ```
 
-## Compile and run the project
-
+### Execução
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+# Modo desenvolvimento com Hot-Reload
+npm run start:dev
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## ⚡ Orquestração BI
 
-# e2e tests
-$ npm run test:e2e
+O grande diferencial tecnológico deste backend é a sua capacidade de atuar como um **Orquestrador de Inteligência de Dados**. 
 
-# test coverage
-$ npm run test:cov
-```
+### O Fluxo de Refresh Dinâmico:
+Quando o endpoint `/dashboard/refresh-intelligence` é acionado:
+1.  **Gatilho Transacional:** O NestJS intercepta a requisição e valida as permissões de Gestor.
+2.  **Cadeia de Execução Assíncrona:**
+    - **Step 1 (ETL):** Dispara o script Python de ETL que sincroniza as tabelas do PostgreSQL OLTP para o BI.
+    - **Step 2 (Machine Learning):** Assim que o ETL termina, dispara o motor de ML que aplica algoritmos de regressão e clustering para atualizar os Scores de Clientes e Churn.
+3.  **Feedback Instantâneo:** O backend retorna o sucesso e o Dashboard do frontend se recarrega com os novos insights.
 
-## Deployment
+### 📑 Relatórios com Auto-Refresh
+Para garantir que nenhum PDF seja entregue com dados obsoletos, os métodos de geração de relatórios (`generateManagerialReport` e `generateStrategicReport`) **invocam a cadeia de sincronização automaticamente** antes de ler os arquivos de disco. Isso garante 100% de consistência entre o que o usuário vê na tela e o que sai no papel.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+> **KickHub** — Transformando dados de sneakers em inteligência competitiva.

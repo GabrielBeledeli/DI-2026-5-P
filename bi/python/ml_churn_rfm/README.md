@@ -73,4 +73,3 @@ python ml_churn_rfm.py
 Ao final da execução, o banco de dados será atualizado e os novos dashboards e relatórios refletirão a inteligência mais recente.
 
 ---
-*Módulo desenvolvido pelo Core de Inteligência KickHub BI.*
