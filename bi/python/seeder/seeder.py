@@ -123,14 +123,26 @@ def insert_sale(c_id, date_venda):
     cur.execute('INSERT INTO venda_itens ("vendaId", "produtoId", quantidade, "precoUnitario", subtotal) VALUES (%s, %s, %s, %s, %s)',
                 (v_id, p_id, 1, preco, preco))
 
-print("Gerando histórico denso e variado...")
-for c_id in cli_ids:
-    # Every client gets a base of 5 to 15 historical sales for high frequency
-    for _ in range(random.randint(5, 15)):
-        hist_date = datetime(2025, 1, 1) + timedelta(days=random.randint(0, 320))
-        insert_sale(c_id, hist_date)
+print("Gerando histórico denso e variado (últimos 18 meses)... glue data")
+for i, c_id in enumerate(cli_ids):
+    # Distribui a data de "nascimento" (primeira compra) do cliente uniformemente
+    # Garantindo que tenhamos novos clientes em cada um dos últimos 18 meses
+    meses_atras = (i % 18)
+    data_primeira_venda = now - timedelta(days=meses_atras * 30 + random.randint(0, 27))
+    
+    # Insere a primeira venda (a que define o Cohort)
+    insert_sale(c_id, data_primeira_venda)
+    
+    # Cada cliente recebe mais 3 a 15 vendas subsequentes para gerar retenção
+    total_vendas_extras = random.randint(3, 15)
+    for _ in range(total_vendas_extras):
+        # As vendas subsequentes devem ser SEMPRE depois da primeira venda
+        dias_disponiveis = (now - data_primeira_venda).days
+        if dias_disponiveis > 0:
+            venda_date = data_primeira_venda + timedelta(days=random.randint(1, dias_disponiveis))
+            insert_sale(c_id, venda_date)
 
-print("Forçando Padrões de Churn Granulares...")
+print("Calibrando Padrões de Churn e Retenção Recente...")
 for c_id in g_loyal:
     insert_sale(c_id, now - timedelta(days=random.randint(1, 15)))
 

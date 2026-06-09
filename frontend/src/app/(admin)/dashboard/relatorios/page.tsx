@@ -51,7 +51,7 @@ export default function RelatoriosPDFPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight uppercase italic">
-            Central <span className="text-red-600">Relatórios PDF</span>
+            Central <span className="text-red-600">Relatórios</span>
           </h1>
           <p className="text-neutral-500">Geração de documentos analíticos para tomada de decisão.</p>
         </div>
@@ -70,7 +70,7 @@ export default function RelatoriosPDFPage() {
             
             <div>
               <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">
-                Relatório <span className="text-red-600">Comercial</span>
+                Relatório <span className="text-red-600">Gerencial</span>
               </h2>
               <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
                 Indicadores de performance de vendas, faturamento acumulado, 
@@ -96,7 +96,7 @@ export default function RelatoriosPDFPage() {
               onClick={handleDownloadGerencial}
               disabled={loadingGerencial}
             >
-              {loadingGerencial ? "Gerando PDF..." : "Gerar Relatório PDF"}
+              {loadingGerencial ? "Gerando PDF..." : "Gerar Relatório Gerencial"}
             </Button>
           </div>
           <div className="absolute -right-8 -top-8 text-neutral-800/10 pointer-events-none">
@@ -116,11 +116,11 @@ export default function RelatoriosPDFPage() {
             
             <div>
               <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">
-                Análise <span className="text-red-600">Estratégica ML</span>
+                Relatório <span className="text-red-600">Estratégico</span>
               </h2>
               <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
                 Insights baseados em Machine Learning: Previsão de Churn, Segmentação RFM (VIPs) 
-                e plano de ação para retenção de clientes críticos.
+                e análise de propensão de recompra e reativação.
               </p>
             </div>
 
@@ -132,7 +132,7 @@ export default function RelatoriosPDFPage() {
                 <ChevronRight size={14} className="text-red-600" /> Listagem de Clientes VIP (Diamante)
               </li>
               <li className="flex items-center gap-2 text-xs text-neutral-500">
-                <ChevronRight size={14} className="text-red-600" /> Foco em Recuperação Crítica
+                <ChevronRight size={14} className="text-red-600" /> Identificação de Clientes em Risco
               </li>
             </ul>
 
@@ -142,7 +142,7 @@ export default function RelatoriosPDFPage() {
               onClick={handleDownloadStrategic}
               disabled={loadingEstrategico}
             >
-              {loadingEstrategico ? "Processando IA..." : "Gerar Análise Estratégica"}
+              {loadingEstrategico ? "Processando IA..." : "Gerar Relatório Estratégico"}
             </Button>
           </div>
           <div className="absolute -right-8 -top-8 text-neutral-800/10 pointer-events-none">

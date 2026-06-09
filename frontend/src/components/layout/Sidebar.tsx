@@ -44,9 +44,6 @@ const menuItems = [
   { label: 'VENDAS', type: 'header' },
   { label: 'Vendas', href: '/vendas', icon: ShoppingCart },
   { label: 'Nova Venda', href: '/vendas/nova', icon: Plus },
-
-  { label: 'RELATÓRIOS GERENCIAIS', type: 'header' },
-  { label: 'Estatísticas', href: '/dashboard', icon: BarChart2 },
 ];
 
 export default function Sidebar() {

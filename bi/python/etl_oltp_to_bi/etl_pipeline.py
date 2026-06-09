@@ -137,22 +137,18 @@ class ETLPipeline:
                 bi_conn.close()
 
     def run(self) -> None:
-        """Main loop for the ETL process."""
+        """Runs the ETL process once."""
         logger.info("Initializing ETL Pipeline...")
         
         # Step 1: Ensure tables exist
         self.ensure_infrastructure()
 
-        # Step 2: Continuous synchronization
-        while True:
-            logger.info("Starting synchronization cycle...")
-            for source, target in self.tables.items():
-                self.sync_table(source, target)
-            
-            logger.info("Cycle completed. Sleeping for 300 seconds.")
-            # Use environment variable for sleep time if available, otherwise default to 300
-            sleep_time = int(os.getenv('ETL_SLEEP_SECONDS', 300))
-            time.sleep(sleep_time)
+        # Step 2: One-time synchronization
+        logger.info("Starting synchronization cycle...")
+        for source, target in self.tables.items():
+            self.sync_table(source, target)
+        
+        logger.info("ETL process completed successfully.")
 
 if __name__ == "__main__":
     pipeline = ETLPipeline()

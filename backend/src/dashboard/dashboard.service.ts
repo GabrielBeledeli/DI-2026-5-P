@@ -186,6 +186,18 @@ export class DashboardService {
           valor: parseInt(r.total)
         }))
       };
+
+      // 4. Última Carga BI
+      const lastLoad: any[] = await this.prismaBi.$queryRaw`SELECT TO_CHAR(MAX(dtregistrocarga), 'YYYY-MM-DD HH24:MI:SS') as ultima_carga FROM bi_categorias`;
+      if (lastLoad[0]?.ultima_carga) {
+        biEstrategico.ultimaCarga = lastLoad[0].ultima_carga;
+      }
+    } else {
+      // Se não for gestor, ainda precisamos buscar a última carga para o dashboard do vendedor
+      const lastLoad: any[] = await this.prismaBi.$queryRaw`SELECT TO_CHAR(MAX(dtregistrocarga), 'YYYY-MM-DD HH24:MI:SS') as ultima_carga FROM bi_categorias`;
+      if (lastLoad[0]?.ultima_carga) {
+        biEstrategico.ultimaCarga = lastLoad[0].ultima_carga;
+      }
     }
 
     return {
@@ -301,13 +313,17 @@ export class DashboardService {
       LIMIT ${limit} OFFSET ${offset}
     `, ...queryParams);
 
+    // Busca a última carga para esta tela também
+    const lastLoad: any[] = await this.prismaBi.$queryRaw`SELECT TO_CHAR(MAX(dtregistrocarga), 'YYYY-MM-DD HH24:MI:SS') as ultima_carga FROM bi_categorias`;
+
     return {
       data,
       meta: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
+        ultimaCarga: lastLoad[0]?.ultima_carga || null
       }
     };
   }

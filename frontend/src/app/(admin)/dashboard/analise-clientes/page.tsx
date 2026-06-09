@@ -17,16 +17,19 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Pagination from '@/components/ui/Pagination';
 import { dashboardService, CustomerAnalysisParams } from '@/services/dashboardService';
+import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 export default function CustomerAnalysisPage() {
   const [data, setData] = useState<any[]>([]);
-  const [meta, setMeta] = useState({
+  const [meta, setMeta] = useState<any>({
     total: 0,
     page: 1,
     limit: 50,
-    totalPages: 0
+    totalPages: 0,
+    ultimaCarga: null
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   
   // Filtros
@@ -53,6 +56,20 @@ export default function CustomerAnalysisPage() {
       console.error("Erro ao carregar análise de clientes:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefreshIntelligence = async () => {
+    try {
+      setRefreshing(true);
+      await dashboardService.refreshIntelligence();
+      await fetchData(1); 
+      showSuccessAlert('Sucesso', 'Inteligência de dados (ETL + ML) sincronizada com sucesso!');
+    } catch (error) {
+      console.error('Erro ao sincronizar inteligência:', error);
+      showErrorAlert(error, 'Falha ao sincronizar inteligência de dados.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -98,11 +115,26 @@ export default function CustomerAnalysisPage() {
             Análise <span className="text-red-600">Clientes</span>
           </h1>
           <p className="text-neutral-500">Exploração analítica profunda da base de consumidores.</p>
+          {meta.ultimaCarga && (
+            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest mt-1">
+              Última Atualização em: {new Date(meta.ultimaCarga).toLocaleString('pt-BR')}
+            </p>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" leftIcon={<RefreshCw size={16} />} onClick={() => fetchData(meta.page)}>
-            Atualizar
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-red-600/30 text-red-500 hover:bg-red-600/10"
+            leftIcon={<RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />}
+            onClick={handleRefreshIntelligence}
+            disabled={refreshing || loading}
+          >
+            {refreshing ? "Atualizando BI..." : "Atualizar BI"}
+          </Button>
+          <Button variant="outline" size="sm" leftIcon={<RefreshCw size={16} />} onClick={() => fetchData(meta.page)} disabled={loading}>
+            Atualizar Lista
           </Button>
         </div>
       </div>

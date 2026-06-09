@@ -1,24 +1,28 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { CallHandler, ExecutionContext, NestInterceptor, ValidationPipe } from '@nestjs/common';
+import { CallHandler, ExecutionContext, NestInterceptor, ValidationPipe, StreamableFile } from '@nestjs/common';
 import { map } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import cookieParser from 'cookie-parser';
 
 class BigIntInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    return next
-      .handle()
-      .pipe(
-        map((data) =>
-          JSON.parse(
-            JSON.stringify(data, (_key, value) =>
-              typeof value === 'bigint' ? value.toString() : value,
-            ),
+    return next.handle().pipe(
+      map((data) => {
+        // Se os dados forem um StreamableFile (como os relatórios PDF), 
+        // ignoramos o interceptor para não corromper o binário.
+        if (data instanceof StreamableFile || (data && data.pipe && typeof data.pipe === 'function')) {
+          return data;
+        }
+
+        return JSON.parse(
+          JSON.stringify(data, (_key, value) =>
+            typeof value === 'bigint' ? value.toString() : value,
           ),
-        ),
-      );
+        );
+      }),
+    );
   }
 }
 

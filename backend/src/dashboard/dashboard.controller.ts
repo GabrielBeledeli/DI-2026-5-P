@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, StreamableFile } from '@nestjs/common';
+import { Controller, Get, Query, Res, StreamableFile, Post } from '@nestjs/common';
 import { DashboardService, DashboardStatsParams, CustomerAnalysisParams } from './dashboard.service';
 import { CurrentUser } from '../auth/user.decorator';
 import { join } from 'path';
@@ -31,18 +31,44 @@ export class DashboardController {
     return this.dashboardService.getCustomerAnalysis(query);
   }
 
+  @Post('refresh-intelligence')
+  async refreshIntelligence(@CurrentUser() user: any) {
+    if (user.perfil !== 'GESTOR') throw new Error('Acesso negado.');
+
+    const baseBIPath = join(process.cwd(), '..', 'bi', 'python');
+    
+    // 1. Executa o ETL
+    const etlPath = join(baseBIPath, 'etl_oltp_to_bi');
+    const etlExe = join(etlPath, 'venv', 'Scripts', 'python.exe');
+    const etlScript = join(etlPath, 'etl_pipeline.py');
+    console.log('Iniciando ETL...');
+    await execAsync(`"${etlExe}" "${etlScript}"`);
+
+    // 2. Executa o ML
+    const mlPath = join(baseBIPath, 'ml_churn_rfm');
+    const mlExe = join(mlPath, 'venv', 'Scripts', 'python.exe');
+    const mlScript = join(mlPath, 'ml_churn_rfm.py');
+    console.log('Iniciando Recálculo de ML...');
+    await execAsync(`"${mlExe}" "${mlScript}"`);
+
+    return { message: 'Inteligência de dados atualizada com sucesso!' };
+  }
+
   @Get('report/managerial')
   async generateManagerialReport(@Res({ passthrough: true }) res, @CurrentUser() user: any) {
     if (user.perfil !== 'GESTOR') throw new Error('Acesso negado.');
     
-    // Executa o script Python
-    const scriptPath = join(process.cwd(), '..', 'bi', 'python', 'relatorios', 'gerar_relatorios.py');
-    await execAsync(`python "${scriptPath}"`);
+    // Antes de gerar, garante que os dados estão atualizados
+    await this.refreshIntelligence(user);
     
-    // O script gera um arquivo com a data de hoje. Vamos buscar o mais recente na pasta arquivos.
-    const filesDir = join(process.cwd(), '..', 'bi', 'python', 'relatorios', 'arquivos');
-    const fileName = `relatorio_gerencial_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.pdf`;
-    const filePath = join(filesDir, fileName);
+    const baseBIPath = join(process.cwd(), '..', 'bi', 'python', 'relatorios');
+    const pythonExe = join(baseBIPath, 'venv', 'Scripts', 'python.exe');
+    const scriptPath = join(baseBIPath, 'gerar_relatorio_gerencial.py');
+    
+    await execAsync(`"${pythonExe}" "${scriptPath}"`);
+    
+    const fileName = 'relatorio_gerencial.pdf';
+    const filePath = join(baseBIPath, 'arquivos', fileName);
 
     if (!existsSync(filePath)) throw new Error('Relatório não encontrado.');
 
@@ -58,12 +84,17 @@ export class DashboardController {
   async generateStrategicReport(@Res({ passthrough: true }) res, @CurrentUser() user: any) {
     if (user.perfil !== 'GESTOR') throw new Error('Acesso negado.');
     
-    const scriptPath = join(process.cwd(), '..', 'bi', 'python', 'relatorios', 'gerar_relatorios.py');
-    await execAsync(`python "${scriptPath}"`);
+    // Antes de gerar, garante que os dados estão atualizados
+    await this.refreshIntelligence(user);
     
-    const filesDir = join(process.cwd(), '..', 'bi', 'python', 'relatorios', 'arquivos');
-    const fileName = `relatorio_estrategico_${new Date().toISOString().split('T')[0].replace(/-/g, '')}.pdf`;
-    const filePath = join(filesDir, fileName);
+    const baseBIPath = join(process.cwd(), '..', 'bi', 'python', 'relatorios');
+    const pythonExe = join(baseBIPath, 'venv', 'Scripts', 'python.exe');
+    const scriptPath = join(baseBIPath, 'gerar_relatorio_estrategico.py');
+    
+    await execAsync(`"${pythonExe}" "${scriptPath}"`);
+    
+    const fileName = 'relatorio_estrategico.pdf';
+    const filePath = join(baseBIPath, 'arquivos', fileName);
 
     if (!existsSync(filePath)) throw new Error('Relatório não encontrado.');
 

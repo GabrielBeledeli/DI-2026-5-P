@@ -3,13 +3,12 @@ import pandas as pd
 import psycopg2
 import matplotlib
 import warnings
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 
 # Set non-interactive backend for matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.ticker
 
 # Silence pandas DBAPI2 warning
 warnings.filterwarnings('ignore', category=UserWarning, module='pandas')
@@ -39,7 +38,7 @@ COLOR_TEXT = colors.HexColor(TEXT_GRAY)
 COLOR_BG_LIGHT = colors.HexColor(BG_LIGHT_GRAY)
 COLOR_WHITE = colors.white
 
-class KickHubProfessionalReporter:
+class KickHubGerencialReporter:
     def __init__(self):
         self.bi_config = {
             'host': os.getenv('BI_HOST', 'localhost'),
@@ -151,7 +150,6 @@ class KickHubProfessionalReporter:
             FROM mtd m, last_month_total l_full, last_month_same_period l_same, nc_mtd, nc_last
         """
         pulse = pd.read_sql(q, conn).iloc[0]
-        # Safety fill for None values that might slip through SQL drivers
         pulse = pulse.fillna(0)
         return pulse
 
@@ -234,7 +232,7 @@ class KickHubProfessionalReporter:
             print(f"Relatório gerado com sucesso: {filename}")
         except PermissionError: print(f"ERRO: O arquivo {filename} está aberto.")
 
-    def gerar_relatorio_gerencial(self):
+    def run(self):
         filename = "relatorio_gerencial.pdf"; filepath = os.path.join(self.output_dir, filename); doc = SimpleDocTemplate(filepath, pagesize=A4, leftMargin=1*cm, rightMargin=1*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
         elements = []; conn = self.get_connection()
         elements.append(Paragraph(self.style_title("Resumo Gerencial"), self.styles['KH_SectionTitle']))
@@ -276,101 +274,13 @@ class KickHubProfessionalReporter:
                     t = Table(data, colWidths=[10.5*cm, 3*cm, 4*cm]); t.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), COLOR_SECONDARY), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTSIZE', (0,0), (-1,-1), 9), ('ALIGN', (1,0), (-1,-1), 'CENTER'), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, COLOR_BG_LIGHT])])); elements.append(t); elements.append(Spacer(1, 1*cm))
                 else: elements.append(Paragraph(self.style_title(f"{title_text} - {label}"), self.styles['KH_SectionTitle'])); elements.append(Paragraph("Sem dados para este período.", self.styles['KH_Normal']))
         
-        render_temporal_block(elements, conn, 'categoria', "Faturamento Categoria"); render_temporal_block(elements, conn, 'marca', "Faturamento Marca", color=SECONDARY_NAVY); render_temporal_block(elements, conn, 'modelo', "Performance Modelo"); render_temporal_block(elements, conn, 'tamanho', "Performance Tamanho", color=DARK_BLACK); render_temporal_block(elements, conn, 'genero', "Performance Gênero", kind='pie'); render_temporal_block(elements, conn, 'vendedor', "Ranking Vendedores", color=KICKHUB_RED); elements.append(Paragraph(self.style_title("Estoque Atual"), self.styles['KH_SectionTitle'])); q_s = pd.read_sql("SELECT SUM(estoque) as u, SUM(estoque*preco) as a FROM bi_produtos", conn).iloc[0]; sk = [self.draw_kpi_card("Total Unidades", self.format_number(q_s['u'])), self.draw_kpi_card("Valor Ativo", self.format_currency(q_s['a']))]; elements.append(Table([sk], colWidths=[9.2*cm, 9.2*cm])); elements.append(Spacer(1, 0.5*cm)); dm = pd.read_sql("SELECT marca, SUM(estoque) as t FROM bi_produtos GROUP BY marca ORDER BY t DESC LIMIT 15", conn).set_index('marca'); c1 = self.generate_simple_chart(dm, kind='bar', filename='st_marca.png'); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Marca"), self.styles['KH_SectionTitle']), Image(c1, width=17.5*cm, height=9.5*cm)])); dmod = pd.read_sql("SELECT nome, SUM(estoque) as t FROM bi_produtos GROUP BY nome ORDER BY t DESC LIMIT 15", conn).set_index('nome'); c2 = self.generate_simple_chart(dmod, kind='hbar', filename='st_modelo.png'); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Modelo"), self.styles['KH_SectionTitle']), Image(c2, width=17.5*cm, height=9.5*cm)])); dt = pd.read_sql("SELECT tamanho, SUM(estoque) as t FROM bi_produtos GROUP BY tamanho ORDER BY tamanho ASC", conn).set_index('tamanho'); c3 = self.generate_simple_chart(dt, kind='bar', filename='st_tamanho.png', color=DARK_BLACK); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Tamanho"), self.styles['KH_SectionTitle']), Image(c3, width=17.5*cm, height=9.5*cm)])); dg = pd.read_sql("SELECT genero, SUM(estoque) as t FROM bi_produtos GROUP BY genero", conn).set_index('genero'); c4 = self.generate_simple_chart(dg, kind='pie', filename='st_genero.png'); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Gênero"), self.styles['KH_SectionTitle']), Image(c4, width=17.5*cm, height=9.5*cm)])); elements.append(PageBreak()); df_low = pd.read_sql("SELECT nome, marca, tamanho, estoque FROM bi_produtos WHERE estoque < 10 ORDER BY estoque ASC", conn)
+        render_temporal_block(elements, conn, 'categoria', "Faturamento Categoria"); render_temporal_block(elements, conn, 'marca', "Faturamento Marca", color=SECONDARY_NAVY); render_temporal_block(elements, conn, 'modelo', "Performance Modelo"); render_temporal_block(elements, conn, 'tamanho', "Performance Tamanho", color=DARK_BLACK); render_temporal_block(elements, conn, 'genero', "Performance Gênero", kind='pie'); render_temporal_block(elements, conn, 'vendedor', "Ranking Vendedores", color=KICKHUB_RED); elements.append(Paragraph(self.style_title("Estoque Atual"), self.styles['KH_SectionTitle'])); q_s = pd.read_sql("SELECT SUM(estoque) as u, SUM(estoque*preco) as a FROM bi_produtos", conn).iloc[0]; sk = [self.draw_kpi_card("Total Unidades", self.format_number(q_s['u'])), self.draw_kpi_card("Valor Ativo", self.format_currency(q_s['a']))]; elements.append(Table([sk], colWidths=[9.2*cm, 9.2*cm])); elements.append(Spacer(1, 0.5*cm)); dm = pd.read_sql("SELECT marca, SUM(estoque) as t FROM bi_produtos GROUP BY marca ORDER BY t DESC LIMIT 15", conn).set_index('marca'); c1 = self.generate_simple_chart(dm, kind='bar', filename='st_marca.png'); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Marca"), self.styles['KH_SectionTitle']), Image(c1, width=17.5*cm, height=9.5*cm)])); dmod = pd.read_sql("SELECT nome, SUM(estoque) as t FROM bi_produtos GROUP BY nome ORDER BY t DESC LIMIT 15", conn).set_index('nome'); c2 = self.generate_simple_chart(dmod, kind='hbar', filename='st_modelo.png'); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Modelo"), self.styles['KH_SectionTitle']), Image(c2, width=17.5*cm, height=9.5*cm)])); dt = pd.read_sql("SELECT tamanho, SUM(estoque) as t FROM bi_produtos GROUP BY tamanho ORDER BY tamanho ASC", conn).set_index('tamanho'); c3 = self.generate_simple_chart(dt, kind='bar', filename='st_tamanho.png', color=DARK_BLACK); elements.append(KeepTogether([Paragraph(self.style_title("Estoque Tamanho"), self.styles['KH_SectionTitle']), Image(c3, width=17.5*cm, height=9.5*cm)]))
+        df_low = pd.read_sql("SELECT nome, marca, tamanho, estoque FROM bi_produtos WHERE estoque <= 3 ORDER BY estoque ASC", conn)
         if not df_low.empty: elements.append(Paragraph(self.style_title("Alerta Estoque"), self.styles['KH_SectionTitle'])); ld = [["Produto", "Marca", "Tam", "Est"]] + [[str(r['nome'])[:35], r['marca'], r['tamanho'], r['estoque']] for _, r in df_low.iterrows()]; lt = Table(ld, colWidths=[9*cm, 4*cm, 2.5*cm, 2.5*cm]); lt.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), COLOR_KICKHUB), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('GRID', (0,0), (-1,-1), 0.5, colors.grey)])); elements.append(lt); elements.append(Spacer(1, 1*cm))
         df_dead = pd.read_sql("SELECT nome, marca, estoque, preco, (estoque*preco) as v FROM bi_produtos WHERE id NOT IN (SELECT produtoId FROM bi_venda_itens) ORDER BY v DESC LIMIT 100", conn)
         if not df_dead.empty: elements.append(Paragraph(self.style_title("Estoque Parado"), self.styles['KH_SectionTitle'])); dd = [["Produto", "Marca", "Est", "Valor"]] + [[str(r['nome'])[:35], r['marca'], r['estoque'], self.format_currency(r['v'])] for _, r in df_dead.iterrows()]; dtbl = Table(dd, colWidths=[8*cm, 4*cm, 2*cm, 4*cm]); dtbl.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, COLOR_BG_LIGHT])])); elements.append(dtbl); elements.append(Spacer(1, 1*cm))
         elements.append(Paragraph(self.style_title("Inventário Completo"), self.styles['KH_SectionTitle'])); df_inv = pd.read_sql("SELECT nome, marca, cor, tamanho, estoque, preco FROM bi_produtos ORDER BY marca, nome", conn); idat = [["Produto", "Marca", "Cor", "Tam", "Est", "Preço"]] + [[str(r['nome'])[:25], r['marca'], r['cor'], r['tamanho'], r['estoque'], self.format_currency(r['preco'])] for _, r in df_inv.iterrows()]; itbl = Table(idat, colWidths=[6*cm, 3*cm, 3*cm, 1.5*cm, 1.5*cm, 3*cm], repeatRows=1); itbl.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), COLOR_DARK), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('FONTSIZE', (0,0), (-1,-1), 8), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, COLOR_BG_LIGHT])])); elements.append(itbl); conn.close(); self.build_pdf_safely(doc, elements, filename, "GERENCIAL")
 
-    def gerar_relatorio_estrategico(self):
-        filename = "relatorio_estrategico.pdf"; filepath = os.path.join(self.output_dir, filename); doc = SimpleDocTemplate(filepath, pagesize=A4, leftMargin=1*cm, rightMargin=1*cm, topMargin=1.5*cm, bottomMargin=1.5*cm)
-        elements = []; conn = self.get_connection()
-        q_intel = "SELECT AVG(valor_total) as avg_ltv, COUNT(CASE WHEN UPPER(risco_churn) IN ('ALTO', 'CRÍTICO') THEN 1 END) as churn_count, (COUNT(CASE WHEN UPPER(risco_churn) IN ('ALTO', 'CRÍTICO') THEN 1 END)::float / COUNT(*)) * 100 as churn_rate, (COUNT(CASE WHEN frequencia_total > 1 THEN 1 END)::float / COUNT(*)) * 100 as recurrence_rate, SUM(CASE WHEN UPPER(risco_churn) IN ('ALTO', 'CRÍTICO') THEN valor_total ELSE 0 END) as revenue_at_risk FROM ml_cliente_scores"
-        intel = pd.read_sql(q_intel, conn).iloc[0]
-        
-        elements.append(Paragraph(self.style_title("Inteligência Estratégica"), self.styles['KH_SectionTitle']))
-        i_row = [self.draw_kpi_card("LTV Médio", self.format_currency(intel['avg_ltv']), width=6.1*cm, small_font=True), self.draw_kpi_card("Receita em Risco", self.format_currency(intel['revenue_at_risk']), width=6.1*cm, small_font=True), self.draw_kpi_card("Clientes em Risco", int(intel['churn_count']), width=6.1*cm)]
-        elements.append(Table([i_row], colWidths=[6.1*cm]*3)); elements.append(Spacer(1, 1*cm))
-        # Churn Chart on Page 1 (Semantic Colors)
-        df_risk = pd.read_sql("SELECT risco_churn as label, COUNT(*) as t FROM ml_cliente_scores GROUP BY label", conn)
-        
-        # Enforce order and specific colors
-        risk_order = ['Baixo', 'Médio', 'Alto', 'Crítico']
-        df_risk['label'] = pd.Categorical(df_risk['label'], categories=risk_order, ordered=True)
-        df_risk = df_risk.sort_values('label')
-        
-        # Premium Brand Palette (No traffic lights)
-        color_map = {
-            'Baixo': '#cbd5e1',   # Light Slate (Safe)
-            'Médio': '#94a3b8',   # Medium Slate (Attention)
-            'Alto': '#f87171',    # Soft Red (Warning)
-            'Crítico': '#dc2626'   # KickHub Red (Danger)
-        }
-        actual_colors = [color_map[l] for l in df_risk['label']]
-        
-        # Prepare for chart
-        df_rl = pd.DataFrame({'label': df_risk['label'], 'total': df_risk['t'], 'qtd': df_risk['t']})
-        
-        # Create chart with specific colors
-        plt.close('all'); fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), facecolor='#f9fafb')
-        df_rl.set_index('label')['total'].plot(kind='pie', autopct='%1.1f%%', ax=ax1, colors=actual_colors, startangle=90, textprops={'fontsize': 10, 'fontweight': 'bold'})
-        ax1.set_title('Distribuição de Risco (Volume)', fontweight='bold', color=DARK_BLACK); ax1.set_ylabel('')
-        
-        # Second pie: Revenue at risk per category
-        df_rev_risk = pd.read_sql("SELECT risco_churn as label, SUM(valor_total) as total FROM ml_cliente_scores GROUP BY label", conn)
-        df_rev_risk['label'] = pd.Categorical(df_rev_risk['label'], categories=risk_order, ordered=True)
-        df_rev_risk = df_rev_risk.sort_values('label')
-        actual_colors_rev = [color_map[l] for l in df_rev_risk['label']]
-        
-        df_rev_risk.set_index('label')['total'].plot(kind='pie', autopct='%1.1f%%', ax=ax2, colors=actual_colors_rev, startangle=90, textprops={'fontsize': 10, 'fontweight': 'bold'})
-        ax2.set_title('Receita em Risco (R$)', fontweight='bold', color=DARK_BLACK); ax2.set_ylabel('')
-        
-        c_path = os.path.join(self.output_dir, 'strat_churn_risk.png')
-        plt.tight_layout(); plt.savefig(c_path, dpi=120)
-        
-        elements.append(KeepTogether([Paragraph(self.style_title("Saúde Base"), self.styles['KH_SectionTitle']), Image(c_path, width=17.5*cm, height=8*cm)]))
-        elements.append(PageBreak())
-        elements.append(Paragraph(self.style_title("Análise Cohort"), self.styles['KH_SectionTitle'])); elements.append(Paragraph("Acompanhamento de fidelidade: % de clientes que voltam a comprar após a primeira aquisição", self.styles['KH_Normal_Styled'])); q_c = "WITH fp AS (SELECT clienteId, DATE_TRUNC('month', MIN(dataVenda)) as c_m FROM bi_vendas WHERE status = 'CONCLUIDA' GROUP BY clienteId), rb AS (SELECT fp.c_m, DATE_TRUNC('month', v.dataVenda) as b_m, COUNT(DISTINCT v.clienteId) as a_c FROM fp JOIN bi_vendas v ON fp.clienteId = v.clienteId WHERE v.status = 'CONCLUIDA' AND v.dataVenda >= fp.c_m GROUP BY 1, 2) SELECT c_m as cohort_month, TO_CHAR(c_m, 'MM/YYYY') as mes_safra, EXTRACT(YEAR FROM age(b_m, c_m))*12 + EXTRACT(MONTH FROM age(b_m, c_m)) as month_number, a_c as active_customers FROM rb WHERE c_m >= '2025-01-01' ORDER BY c_m ASC, month_number ASC"; df_c = pd.read_sql(q_c, conn)
-        if not df_c.empty:
-            piv = df_c.pivot(index='cohort_month', columns='month_number', values='active_customers').fillna(0); lmap = df_c.set_index('cohort_month')['mes_safra'].to_dict(); piv.index = [lmap[i] for i in piv.index]; piv.columns = piv.columns.astype(int); cpct = piv.div(piv[0], axis=0) * 100; plt.close('all'); fig, ax = plt.subplots(figsize=(12, 6), facecolor='#f9fafb'); import seaborn as sns; sns.heatmap(cpct, annot=True, fmt=".1f", cmap="Reds", cbar=False, ax=ax); plt.title("Taxa de Retenção Cohort (%)", fontweight='bold'); plt.xlabel(""); plt.ylabel(""); c_path = os.path.join(self.output_dir, "strat_cohort.png"); plt.tight_layout(); plt.savefig(c_path, dpi=120); elements.append(Image(c_path, width=17.5*cm, height=8.5*cm))
-        
-        # DIAMOND CLIENTS on Page 2
-        elements.append(Paragraph(self.style_title("Clientes Diamante"), self.styles['KH_SectionTitle']))
-        df_v = pd.read_sql("SELECT c.nome, s.valor_total, s.score_compra_rfm as score, mv.ultima_compra FROM ml_cliente_scores s JOIN bi_clientes c ON s.cliente_id = c.id LEFT JOIN (SELECT clienteId, MAX(dataVenda) as ultima_compra FROM bi_vendas GROUP BY clienteId) mv ON c.id = mv.clienteId WHERE s.score_compra_rfm >= 80 ORDER BY s.score_compra_rfm DESC LIMIT 20", conn)
-        vd = [["Cliente", "LTV Acumulado", "Score RFM", "Última Compra"]]
-        for _, r in df_v.iterrows(): vd.append([str(r['nome'])[:25], self.format_currency(r['valor_total']), f"{r['score']:.1f}", r['ultima_compra'].strftime('%d/%m/%Y') if pd.notnull(r['ultima_compra']) else 'N/A'])
-        vtb = Table(vd, colWidths=[7*cm, 4*cm, 3.5*cm, 4*cm])
-        vtb.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), COLOR_SECONDARY), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTSIZE', (0,0), (-1,-1), 9), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, COLOR_BG_LIGHT])]))
-        elements.append(vtb); elements.append(PageBreak())
-
-        # Page 3: Market
-        elements.append(Paragraph(self.style_title("Ticket Marca"), self.styles['KH_SectionTitle']))
-        df_btk = pd.read_sql("SELECT p.marca as label, AVG(v.total) as total, COUNT(v.id) as qtd FROM bi_vendas v JOIN bi_venda_itens vi ON v.id = vi.vendaId JOIN bi_produtos p ON vi.produtoId = p.id WHERE v.status = 'CONCLUIDA' GROUP BY p.marca ORDER BY total DESC LIMIT 15", conn)
-        cb = self.generate_dual_chart(df_btk, kind='hbar', filename='strat_brand_ticket.png', color=SECONDARY_NAVY)
-        elements.append(Image(cb, width=17.5*cm, height=9.5*cm)); elements.append(Spacer(1, 0.5*cm))
-
-        elements.append(Paragraph(self.style_title("Curva Aquisição"), self.styles['KH_SectionTitle']))
-        df_a = pd.read_sql("SELECT TO_CHAR(dataCadastro, 'MM/YYYY') as label, COUNT(*) as total, 0 as qtd FROM bi_clientes WHERE dataCadastro < DATE_TRUNC('month', NOW()) GROUP BY label, DATE_TRUNC('month', dataCadastro) ORDER BY DATE_TRUNC('month', dataCadastro) DESC LIMIT 12", conn).iloc[::-1]
-        plt.close('all'); plt.figure(figsize=(12, 6), facecolor='#f9fafb'); plt.plot(df_a['label'], df_a['total'], color=KICKHUB_RED, marker='o', linewidth=3, markersize=10)
-        for i, v in enumerate(df_a['total']): plt.annotate(str(v), xy=(i, v), xytext=(0, 10), textcoords="offset points", ha='center', fontweight='bold', bbox=dict(boxstyle='round', fc='white', ec=KICKHUB_RED))
-        plt.title("Novos Clientes por Mês", fontweight='bold'); plt.xticks(rotation=45); plt.grid(alpha=0.2); ca = os.path.join(self.output_dir, "strat_acq.png"); plt.tight_layout(); plt.savefig(ca, dpi=120)
-        elements.append(Image(ca, width=17.5*cm, height=8*cm)); elements.append(PageBreak())
-
-        # Page 4: Reactivation
-        elements.append(Paragraph(self.style_title("Oportunidades Reativação"), self.styles['KH_SectionTitle']))
-        df_re = pd.read_sql("SELECT c.nome, c.email, s.valor_total, mv.ultima_compra FROM ml_cliente_scores s JOIN bi_clientes c ON s.cliente_id = c.id JOIN (SELECT clienteId, MAX(dataVenda) as ultima_compra FROM bi_vendas GROUP BY clienteId) mv ON c.id = mv.clienteId WHERE s.valor_total > 500 AND mv.ultima_compra < NOW() - INTERVAL '60 days' ORDER BY s.valor_total DESC LIMIT 20", conn)
-        if not df_re.empty:
-            rd = [["Cliente", "E-mail", "LTV Histórico", "Dias Inativo"]]
-            for _, r in df_re.iterrows():
-                days = (datetime.now() - r['ultima_compra']).days if pd.notnull(r['ultima_compra']) else 0
-                rd.append([str(r['nome'])[:20], str(r['email'])[:20], self.format_currency(r['valor_total']), f"{days} dias"])
-            rtb = Table(rd, colWidths=[6.5*cm, 6.5*cm, 3.5*cm, 2*cm])
-            rtb.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), COLOR_KICKHUB), ('TEXTCOLOR', (0,0), (-1,0), colors.white), ('GRID', (0,0), (-1,-1), 0.5, colors.grey), ('FONTSIZE', (0,0), (-1,-1), 9), ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, COLOR_BG_LIGHT])]))
-            elements.append(rtb)
-        
-        conn.close(); self.build_pdf_safely(doc, elements, filename, "ESTRATÉGICO")
-
 if __name__ == "__main__":
-    reporter = KickHubProfessionalReporter()
-    reporter.gerar_relatorio_gerencial()
-    reporter.gerar_relatorio_estrategico()
+    reporter = KickHubGerencialReporter()
+    reporter.run()

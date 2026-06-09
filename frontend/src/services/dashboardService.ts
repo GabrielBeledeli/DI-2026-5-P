@@ -36,6 +36,7 @@ export interface DashboardStats {
       risco: string;
       probabilidade: string;
     }>;
+    ultimaCarga?: string;
   };
 }
 
@@ -95,6 +96,11 @@ export const dashboardService = {
   
   getScoreReport: async (): Promise<any[]> => {
     const response = await api.get("/dashboard/score-report");
+    return response.data;
+  },
+
+  refreshIntelligence: async (): Promise<{ message: string }> => {
+    const response = await api.post("/dashboard/refresh-intelligence");
     return response.data;
   }
 };
