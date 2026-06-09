@@ -332,12 +332,7 @@ class KickHubEstrategicoReporter:
         cb = self.generate_dual_chart(df_btk, kind='hbar', filename='strat_brand_ticket.png', color=SECONDARY_NAVY)
         elements.append(Image(cb, width=17.5*cm, height=9.5*cm)); elements.append(Spacer(1, 0.5*cm))
 
-        elements.append(Paragraph(self.style_title("Curva Aquisição"), self.styles['KH_SectionTitle']))
-        df_a = pd.read_sql("SELECT TO_CHAR(dataCadastro, 'MM/YYYY') as label, COUNT(*) as total, 0 as qtd FROM bi_clientes WHERE dataCadastro < DATE_TRUNC('month', NOW()) GROUP BY label, DATE_TRUNC('month', dataCadastro) ORDER BY DATE_TRUNC('month', dataCadastro) DESC LIMIT 12", conn).iloc[::-1]
-        plt.close('all'); plt.figure(figsize=(12, 6), facecolor='#f9fafb'); plt.plot(df_a['label'], df_a['total'], color=KICKHUB_RED, marker='o', linewidth=3, markersize=10)
-        for i, v in enumerate(df_a['total']): plt.annotate(str(v), xy=(i, v), xytext=(0, 10), textcoords="offset points", ha='center', fontweight='bold', bbox=dict(boxstyle='round', fc='white', ec=KICKHUB_RED))
-        plt.title("Novos Clientes por Mês", fontweight='bold'); plt.xticks(rotation=45); plt.grid(alpha=0.2); ca = os.path.join(self.output_dir, "strat_acq.png"); plt.tight_layout(); plt.savefig(ca, dpi=120)
-        elements.append(Image(ca, width=17.5*cm, height=8*cm)); elements.append(PageBreak())
+        elements.append(PageBreak())
 
         # Page 4: Reactivation
         elements.append(Paragraph(self.style_title("Oportunidades Reativação"), self.styles['KH_SectionTitle']))
